@@ -10,7 +10,7 @@ import javax.swing.JComponent;
 import entities.components.Component;
 import exceptions.DuplicateComponentException;
 
-public abstract class Entity{
+public class Entity{
 
 	// init
 	private int id;
