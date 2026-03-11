@@ -1,17 +1,31 @@
 package core;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferStrategy;
+
+import input.InputManager;
+
 public class Engine implements Runnable {
-
-    private static final double FPS = 60.0;	//change this to cap FPS.
-    private static final double FRAME_TIME = 1_000_000_000.0 / FPS; // nanoseconds
-    
+	
     private GamePanel renderSurface;
-
+    
+    private Scene currentScene;
+    
+    private InputManager inputManager;
+    
     private volatile boolean running = false;
     private Thread thread;
     
     public Engine(GamePanel gamePanel) {
     	this.renderSurface = gamePanel;
+    	inputManager = new InputManager();
+    	
+    	this.renderSurface.addKeyListener(inputManager.getKeyboard());
+    	this.renderSurface.addMouseListener(inputManager.getMouse());
+    	this.renderSurface.addMouseMotionListener(inputManager.getMouse());
+    	this.renderSurface.setFocusable(true);
+    	this.renderSurface.requestFocus();
     }
     
     public void start() {
@@ -45,7 +59,7 @@ public class Engine implements Runnable {
             if (dt > 0.25) dt = 0.25;
 
             update(dt);
-            render(); // usually repaint()
+            render();
 
             long workTimeNs = System.nanoTime() - startTime;
             long remainingNs = FRAME_NS - workTimeNs;
@@ -64,13 +78,35 @@ public class Engine implements Runnable {
         }
     }
 
-
-
+    
     private void update(double dt) {
-        // scene.update(dt);
+        //scene.update(dt);
+    	currentScene.update(dt);
     }
 
     private void render() {
-        // renderSurface.repaint();
+    	BufferStrategy bs = renderSurface.getBufferStrategy();
+    	if (bs == null) return;
+    	do {
+    		do {
+    			Graphics2D g = (Graphics2D) bs.getDrawGraphics();
+    			try {
+    				g.setColor(Color.BLACK);
+    				g.fillRect(0, 0, renderSurface.getWidth(), renderSurface.getHeight());
+    				currentScene.render(g);
+    			} finally {
+    				g.dispose();
+    			}
+    		} while (bs.contentsRestored());
+    	} while (bs.contentsLost());
+    	bs.show();
+    }
+    
+    public void setScene(Scene scene) {
+    	this.currentScene = scene;
+    }
+    
+    public InputManager getInputManager() {
+    	return this.inputManager;
     }
 }

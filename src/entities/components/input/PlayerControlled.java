@@ -1,5 +1,7 @@
 package entities.components.input;
 
-public class PlayerControlled {
+import entities.components.Component;
 
+public class PlayerControlled extends Component {
+	public boolean active = true;
 }

@@ -3,5 +3,5 @@ package entities.systems;
 import entities.EntityManager;
 
 public interface GameSystem {
-    void update(EntityManager entities, double dt);
+    void update(EntityManager entityManager, double dt);
 }

@@ -48,13 +48,15 @@ public class Entity{
 
 	// Declare a generic type T which will extend Component, so then we can take it
 	// in, place it according to its actual class.
-	public <T extends Component> void add(T component) {
+	public <T extends Component> Entity add(T component) {
 		if(components.containsKey(component.getClass())) {
 			//COMPONENT ALREADY EXISTS ONLY ONE ALLOWED PER ENTITY
 			throw new DuplicateComponentException("Component Duplicate Error : " + component.getClass());
 		}else {
 			components.put(component.getClass(), component);
 		}
+		
+		return this;
 	}
 
 	// same concept as above for here. Except we are casting the returned component
@@ -79,4 +81,9 @@ public class Entity{
 	public void remove(Class<? extends Component> type) {
 		components.remove(type);
 	}
+	
+	public void setId(int id) {
+		this.id = id;
+	}
 }
+

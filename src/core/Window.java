@@ -36,20 +36,23 @@ public class Window extends JFrame{
 		this.addWindowListener(new WindowAdapter(){
 		    @Override
 		    public void windowClosing(WindowEvent e) {
-		        engine.stop();      
+		        if (engine != null) engine.stop();
 		        dispose();
 		        System.exit(0);
 		    }
 		});
 		
 		//THIS IS THE DRAWING SURFACE LETS GOOO
-		this.setContentPane(renderSurface);
+		this.getContentPane().add(renderSurface);
 		
 		//set title
 		this.setTitle(name);
 
 		//we are adding the frame to the devices screen
 		device.setFullScreenWindow(this);
+		
+		//Create buffer strategy to allow for double buffering
+		renderSurface.initBuffering();
 	}
 	
 	public void setEngine(Engine e) {
