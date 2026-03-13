@@ -1,5 +1,7 @@
 package entities.components.rendering;
 
-public class Animation {
+import entities.components.Component;
+
+public class Animation extends Component{
 
 }

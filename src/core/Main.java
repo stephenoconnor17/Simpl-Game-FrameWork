@@ -7,6 +7,9 @@ import entities.components.input.PlayerControlled;
 import entities.components.movement.MovementValues;
 import entities.components.physics.Collision;
 import entities.components.physics.Pickup;
+import entities.components.physics.RigidBody;
+import entities.components.rendering.Camera;
+import entities.components.rendering.FaceEntity;
 import entities.components.rendering.FaceMouse;
 import entities.components.rendering.Layer;
 import entities.components.rendering.Sprite;
@@ -34,22 +37,29 @@ public class Main {
 		Entity player = new Entity(0,"player");
 		player.add(new Position());
 		player.add(new MovementValues());
-		player.add(new InputState());
+		player.add(new InputState()); 
 		player.add(new PlayerControlled());
 		player.add(new Collision());
+		player.add(new RigidBody());
 		player.add(new FaceMouse());
 		player.add(new Layer().setLayerLevel(1));
 		player.add(new Sprite().setImageLink("bluesquare.png"));
 		
+		
 		Entity enemy = new Entity(0,"player");
 		enemy.add(new Position());
+		enemy.add(new RigidBody());
 		enemy.add(new Sprite().setImageLink("bluesquare.png"));
 		enemy.add(new Layer().setLayerLevel(0));
 		Collision col = new Collision();
 		enemy.add(col);
-		enemy.add(new FaceMouse());
+		enemy.add(new FaceEntity(player));
 		enemy.get(Position.class).x = 200;
 		enemy.get(Position.class).y = 200;
+		Camera cam = new Camera();
+		cam.target = enemy; 
+		cam.userOffsetX += 100;
+		enemy.add(cam);
 		
 		// coin pickup - has Collision but no RigidBody, so no push-apart
 		Entity coin = new Entity(0, "coin");

@@ -93,7 +93,7 @@ public class Engine implements Runnable {
     			try {
     				g.setColor(Color.BLACK);
     				g.fillRect(0, 0, renderSurface.getWidth(), renderSurface.getHeight());
-    				currentScene.render(g);
+    				currentScene.render(g, renderSurface.getWidth(), renderSurface.getHeight());
     			} finally {
     				g.dispose();
     			}
