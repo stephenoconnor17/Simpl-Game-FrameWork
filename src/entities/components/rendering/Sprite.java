@@ -12,7 +12,7 @@ public class Sprite extends Component {
 	
 	public Sprite setImage(String imageLink) {
 		try {
-			System.out.println(getClass().getClassLoader().getResource("sprites/bluesquare.png"));
+			//System.out.println(getClass().getClassLoader().getResource("sprites/bluesquare.png"));
 
 			image = ImageIO.read(getClass().getClassLoader().getResource(imageLink));
 		} catch (IOException e) {

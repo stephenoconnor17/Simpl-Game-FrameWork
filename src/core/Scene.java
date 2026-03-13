@@ -6,7 +6,9 @@ import entities.Entity;
 import entities.EntityManager;
 import entities.systems.MovementSystem;
 import entities.systems.RenderingSystem;
-import entities.systems.TransformSystem;
+import entities.systems.PhysicsSystem;
+import entities.systems.PickupSystem;
+import entities.systems.PlayerControlSystem;
 import input.InputManager;
 
 public class Scene {
@@ -14,14 +16,18 @@ public class Scene {
 	
 	InputManager inputManager;
 	
-	TransformSystem transformSystem;
+	PlayerControlSystem playerControlSystem;
 	MovementSystem movementSystem;
-	
+	PhysicsSystem physicsSystem;
+	PickupSystem pickupSystem;
+
 	RenderingSystem renderingSystem;
 	
 	public void update(double dt) {
-		transformSystem.update(entityManager, dt);
+		playerControlSystem.update(entityManager, dt);
 		movementSystem.update(entityManager, dt);
+		physicsSystem.update(entityManager, dt);
+		pickupSystem.update(entityManager, dt);
 	}
 	
 	public void render(Graphics2D g) {
@@ -33,9 +39,11 @@ public class Scene {
 		
 		entityManager = new EntityManager();
 		
-		transformSystem = new TransformSystem(this.inputManager);
+		playerControlSystem = new PlayerControlSystem(this.inputManager);
 		movementSystem = new MovementSystem();
-		
+		physicsSystem = new PhysicsSystem();
+		pickupSystem = new PickupSystem();
+
 		renderingSystem = new RenderingSystem();
 		
 	}

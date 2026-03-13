@@ -6,7 +6,7 @@ import java.awt.event.MouseMotionListener;
 
 public class Mouse implements MouseListener, MouseMotionListener{
 	
-	int x = 0, y = 0;
+	public int x = 0, y = 0;
 	
 	
 	public void updateXandY(int newX, int newY) {
