@@ -13,8 +13,8 @@ public class Collision extends Component {
 	public Shape shape = Shape.BOX;
 
 	// box dimensions
-	public double width = 48.0;
-	public double height = 48.0;
+	public double width = 8.0;
+	public double height = 8.0;
 
 	// circle radius
 	public double radius = 24.0;

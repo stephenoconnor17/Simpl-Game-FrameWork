@@ -1,6 +1,7 @@
 package core;
 
 import entities.Entity;
+import entities.EntityManager;
 import entities.components.*;
 import entities.components.input.InputState;
 import entities.components.input.PlayerControlled;
@@ -12,15 +13,18 @@ import entities.components.rendering.Camera;
 import entities.components.rendering.FaceEntity;
 import entities.components.rendering.FaceMouse;
 import entities.components.rendering.Layer;
+import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
+import entities.components.transform.ParentEntity;
 import entities.components.transform.Position;
+import entities.components.world.TileMap;
 import input.InputManager;
 
 public class Main {
 	public static void main(String[] args) {
 		
 		Window w = new Window("Hello");
-		Engine e = new Engine(w.getRenderSurface());
+		Engine e = new Engine(w.getRenderSurface(), PixelStyle.BIT_8);
 		//set scene here.
 		e.setScene(myScene(e.getInputManager()));
 		//
@@ -37,45 +41,104 @@ public class Main {
 		Entity player = new Entity(0,"player");
 		player.add(new Position());
 		player.add(new MovementValues());
-		player.add(new InputState()); 
+		player.add(new InputState().setClickToMove(true)); 
 		player.add(new PlayerControlled());
 		player.add(new Collision());
 		player.add(new RigidBody());
 		player.add(new FaceMouse());
+		//player.add(new Camera().setTarget(player));
 		player.add(new Layer().setLayerLevel(1));
-		player.add(new Sprite().setImageLink("bluesquare.png"));
+		player.add(new Sprite().setImageLink("blue8bitsqr.png"));
+		
+		Entity camera = new Entity(0,"camera");
+		Camera cam = new Camera().setTarget(player);
+		cam.zoom = 1.5;
+		camera.add(cam);
+		//camera.add(new RotateViewToMouse());
+		//cam.userOffsetY = -20;
 		
 		
-		Entity enemy = new Entity(0,"player");
+		
+		Entity enemy = new Entity(0,"enemy");
 		enemy.add(new Position());
 		enemy.add(new RigidBody());
-		enemy.add(new Sprite().setImageLink("bluesquare.png"));
+		enemy.add(new Sprite().setImageLink("blue8bitsqr.png"));
 		enemy.add(new Layer().setLayerLevel(0));
+		
+		Entity enemyBorder = new Entity(0,"enemyBorder");
+		enemyBorder.add(new ParentEntity().setParentEntity(enemy));
+		enemyBorder.add(new Position());
+		Collision newCol = new Collision();
+		newCol.shape = Collision.Shape.CIRCLE;
+		newCol.radius = 16;
+		enemyBorder.add(new ScriptComponent((self, entityManager, dt) -> {
+				if(self.has(Position.class) && self.has(ParentEntity.class) && self.has(Collision.class)) {
+
+					Position thisP = self.get(Position.class);
+					Entity pe = self.get(ParentEntity.class).parentEntity;
+					Position pePos = pe.get(Position.class);
+					thisP.x = pePos.x;
+					thisP.y = pePos.y;
+					if (pe.has(Sprite.class) && pe.get(Sprite.class).image != null) {
+						thisP.x += pe.get(Sprite.class).image.getWidth() / 2.0;
+						thisP.y += pe.get(Sprite.class).image.getHeight() / 2.0;
+					}
+
+					Collision col = self.get(Collision.class);
+					Entity playerEntity = entityManager.getEntity("player");
+					System.out.println("collidedWith size: " + col.collidedWith.size()
+							+ " | player lookup: " + (playerEntity != null ? playerEntity.getEntityName() : "NULL")
+							+ " | contains player: " + col.collidedWith.contains(playerEntity));
+					if(col.collidedWith.contains(playerEntity)) {
+						pe.get(Position.class).x += 1;
+					}
+				}
+		}));
+		
 		Collision col = new Collision();
 		enemy.add(col);
 		enemy.add(new FaceEntity(player));
-		enemy.get(Position.class).x = 200;
-		enemy.get(Position.class).y = 200;
-		Camera cam = new Camera();
-		cam.target = enemy; 
-		cam.userOffsetX += 100;
-		enemy.add(cam);
-		
+		enemy.get(Position.class).x = 20;
+		enemy.get(Position.class).y = 20;
 		// coin pickup - has Collision but no RigidBody, so no push-apart
 		Entity coin = new Entity(0, "coin");
 		coin.add(new Position());
-		coin.add(new Sprite().setImageLink("bluesquare.png"));
+		coin.add(new Sprite().setImageLink("blue8bitsqr.png"));
 		coin.add(new Layer().setLayerLevel(0));
 		Collision coinCol = new Collision();
 		coinCol.solid = false;  // no physics response
+		coinCol.radius = 4;
 		coin.add(coinCol);
 		coin.add(new Pickup());
-		coin.get(Position.class).x = 400;
-		coin.get(Position.class).y = 300;
+		coin.get(Position.class).x = 10;
+		coin.get(Position.class).y = 10;
+
+		// tilemap
+		Entity mapEntity = new Entity(0, "tilemap");
+		mapEntity.add(new Position());
+		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").loadMap("test.map"));
+
+		scene.addEntity(mapEntity);
+
+		// spawn wall entities where tile index == 1
+		mapEntity.get(TileMap.class).spawnEntities(scene.entityManager, 0, 0, (tileIndex, wx, wy) -> {
+			if (tileIndex == 1) {
+				Entity wall = new Entity(0, "wall");
+				wall.add(new Position());
+				wall.get(Position.class).x = wx;
+				wall.get(Position.class).y = wy;
+				wall.add(new Collision());
+				wall.add(new RigidBody().setMovable(false));
+				return wall;
+			}
+			return null;
+		});
 
 		scene.addEntity(player);
 		scene.addEntity(enemy);
+		scene.addEntity(enemyBorder);
 		scene.addEntity(coin);
+		scene.addEntity(camera);
 
 		return scene;
 	}

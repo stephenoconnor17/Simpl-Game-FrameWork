@@ -13,4 +13,11 @@ public class Camera extends Component{
 	// computed by RenderingSystem each frame
 	public double offsetX;
 	public double offsetY;
+	public double rotation;
+	public double zoom = 1.0;
+
+	public Camera setTarget(Entity target) {
+		this.target = target;
+		return this;
+	}
 }

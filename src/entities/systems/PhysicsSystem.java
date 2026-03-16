@@ -73,7 +73,8 @@ public class PhysicsSystem implements GameSystem {
 			if (sprite.image != null) return sprite.image.getWidth();
 		}
 		Collision col = e.get(Collision.class);
-		return (col.shape == Shape.BOX) ? col.width : col.radius * 2;
+		// no sprite: BOX position is top-left so use width, CIRCLE position is center so use 0
+		return (col.shape == Shape.BOX) ? col.width : 0;
 	}
 
 	private double getSpriteHeight(Entity e) {
@@ -82,7 +83,7 @@ public class PhysicsSystem implements GameSystem {
 			if (sprite.image != null) return sprite.image.getHeight();
 		}
 		Collision col = e.get(Collision.class);
-		return (col.shape == Shape.BOX) ? col.height : col.radius * 2;
+		return (col.shape == Shape.BOX) ? col.height : 0;
 	}
 
 	// --- collision detection ---
@@ -250,15 +251,29 @@ public class PhysicsSystem implements GameSystem {
 		Position posA = a.get(Position.class);
 		Position posB = b.get(Position.class);
 
+		boolean aMovable = a.get(RigidBody.class).movable;
+		boolean bMovable = b.get(RigidBody.class).movable;
+
+		// neither can move, nothing to resolve
+		if (!aMovable && !bMovable) return;
+
 		double nx = result[0];
 		double ny = result[1];
 		double penetration = result[2];
-		double push = penetration / 2;
 
-		posA.x += nx * push;
-		posA.y += ny * push;
-		posB.x -= nx * push;
-		posB.y -= ny * push;
+		if (aMovable && bMovable) {
+			double push = penetration / 2;
+			posA.x += nx * push;
+			posA.y += ny * push;
+			posB.x -= nx * push;
+			posB.y -= ny * push;
+		} else if (aMovable) {
+			posA.x += nx * penetration;
+			posA.y += ny * penetration;
+		} else {
+			posB.x -= nx * penetration;
+			posB.y -= ny * penetration;
+		}
 	}
 
 	// --- geometry helpers ---

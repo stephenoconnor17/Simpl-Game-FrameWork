@@ -54,6 +54,9 @@ public class EntityManager {
 	
 	public void addEntity(Entity e) {
 		this.entities.add(e);
+		if (e.getEntityName() != null) {
+			tagLookup.put(e.getEntityName(), e);
+		}
 	}
 	
 }

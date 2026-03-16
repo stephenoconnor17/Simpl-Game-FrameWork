@@ -55,7 +55,7 @@ public class Entity{
 		}else {
 			components.put(component.getClass(), component);
 		}
-		
+
 		return this;
 	}
 
@@ -81,9 +81,8 @@ public class Entity{
 	public void remove(Class<? extends Component> type) {
 		components.remove(type);
 	}
-	
+
 	public void setId(int id) {
 		this.id = id;
 	}
 }
-

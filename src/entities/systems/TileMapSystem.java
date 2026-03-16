@@ -2,31 +2,27 @@ package entities.systems;
 
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
-import java.util.Comparator;
-import java.util.List;
+import java.awt.image.BufferedImage;
 
 import entities.Entity;
 import entities.EntityManager;
 import entities.components.rendering.Camera;
-import entities.components.rendering.Layer;
 import entities.components.rendering.Sprite;
 import entities.components.transform.Position;
+import entities.components.world.TileMap;
 
-public class RenderingSystem{
+public class TileMapSystem {
 
 	public void render(EntityManager entities, Graphics2D g, int screenW, int screenH) {
-		List<Entity> MyList = entities.getEntities();
-
-		MyList.sort(Comparator.comparingInt(e -> e.has(Layer.class) ? e.get(Layer.class).layerLevel : 0));
-
 		// find camera offset
 		double camX = 0, camY = 0;
 		double camRotation = 0;
-
-		for (Entity e : MyList) {
+		double camZoom = 1.0;
+		for (Entity e : entities.getEntities()) {
 			if (e.has(Camera.class)) {
 				Camera cam = e.get(Camera.class);
 				camRotation = cam.rotation;
+				camZoom = cam.zoom;
 				if (cam.target != null && cam.target.has(Position.class)) {
 					Entity target = cam.target;
 					Position tp = target.get(Position.class);
@@ -51,11 +47,6 @@ public class RenderingSystem{
 			}
 		}
 
-		double camZoom = 1.0;
-		for (Entity e : MyList) {
-			if (e.has(Camera.class)) { camZoom = e.get(Camera.class).zoom; break; }
-		}
-
 		// apply camera transform: zoom + rotate around screen center, then translate
 		AffineTransform baseTransform = g.getTransform();
 		g.translate(screenW / 2.0, screenH / 2.0);
@@ -64,26 +55,37 @@ public class RenderingSystem{
 		g.translate(-screenW / 2.0, -screenH / 2.0);
 		g.translate(-camX, -camY);
 
-		for(Entity e : MyList) {
-			if(!e.has(Sprite.class) || !e.has(Position.class))continue;
+		for (Entity e : entities.getEntities()) {
+			if (!e.has(TileMap.class) || !e.has(Position.class)) continue;
 
+			TileMap tm = e.get(TileMap.class);
 			Position pos = e.get(Position.class);
-			Sprite spr = e.get(Sprite.class);
 
-			AffineTransform old = g.getTransform();
+			if (tm.map == null || tm.tileset == null) continue;
 
-			double centerX = pos.x + spr.image.getWidth() / 2.0;
-			double centerY = pos.y + spr.image.getHeight() / 2.0;
+			// only draw tiles visible on screen
+			int startCol = Math.max(0, (int) ((camX - pos.x) / tm.tileSize));
+			int startRow = Math.max(0, (int) ((camY - pos.y) / tm.tileSize));
+			int endCol = Math.min(tm.mapWidth, (int) ((camX + screenW - pos.x) / tm.tileSize) + 2);
+			int endRow = Math.min(tm.mapHeight, (int) ((camY + screenH - pos.y) / tm.tileSize) + 2);
 
-			g.rotate(pos.rotation, centerX, centerY);
-			g.translate(pos.x, pos.y);
-			g.drawImage(spr.image, 0, 0, null);
-			g.translate(-pos.x, -pos.y);
+			for (int row = startRow; row < endRow; row++) {
+				for (int col = startCol; col < endCol; col++) {
+					int tileIndex = tm.map[row][col];
+					if (tileIndex < 0) continue; // -1 = empty/no tile
 
-			g.setTransform(old);
+					BufferedImage tileImg = tm.getTileImage(tileIndex);
+					if (tileImg == null) continue;
+
+					double drawX = pos.x + col * tm.tileSize;
+					double drawY = pos.y + row * tm.tileSize;
+					g.translate(drawX, drawY);
+					g.drawImage(tileImg, 0, 0, null);
+					g.translate(-drawX, -drawY);
+				}
+			}
 		}
 
 		g.setTransform(baseTransform);
 	}
-
 }
