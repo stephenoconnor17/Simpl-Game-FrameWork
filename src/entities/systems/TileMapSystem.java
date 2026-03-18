@@ -63,11 +63,13 @@ public class TileMapSystem {
 
 			if (tm.map == null || tm.tileset == null) continue;
 
-			// only draw tiles visible on screen
+			// only draw tiles visible on screen (account for zoom)
+			double visibleW = screenW / camZoom;
+			double visibleH = screenH / camZoom;
 			int startCol = Math.max(0, (int) ((camX - pos.x) / tm.tileSize));
 			int startRow = Math.max(0, (int) ((camY - pos.y) / tm.tileSize));
-			int endCol = Math.min(tm.mapWidth, (int) ((camX + screenW - pos.x) / tm.tileSize) + 2);
-			int endRow = Math.min(tm.mapHeight, (int) ((camY + screenH - pos.y) / tm.tileSize) + 2);
+			int endCol = Math.min(tm.mapWidth, (int) ((camX + visibleW - pos.x) / tm.tileSize) + 2);
+			int endRow = Math.min(tm.mapHeight, (int) ((camY + visibleH - pos.y) / tm.tileSize) + 2);
 
 			for (int row = startRow; row < endRow; row++) {
 				for (int col = startCol; col < endCol; col++) {
