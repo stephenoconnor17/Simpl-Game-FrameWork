@@ -16,6 +16,10 @@ public class Camera extends Component{
 	public double rotation;
 	public double zoom = 1.0;
 
+	// virtual screen dimensions (set during render)
+	public int screenW;
+	public int screenH;
+
 	public Camera setTarget(Entity target) {
 		this.target = target;
 		return this;

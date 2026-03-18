@@ -13,6 +13,7 @@ import entities.systems.PickupSystem;
 import entities.systems.PlayerControlSystem;
 import entities.systems.ScriptSystem;
 import entities.systems.TileMapSystem;
+import entities.systems.TimeToLiveSystem;
 import input.InputManager;
 
 public class Scene {
@@ -25,6 +26,7 @@ public class Scene {
 	PhysicsSystem physicsSystem;
 	PickupSystem pickupSystem;
 	ScriptSystem scriptSystem;
+	TimeToLiveSystem timeToLiveSystem;
 
 	TileMapSystem tileMapSystem;
 	RenderingSystem renderingSystem;
@@ -35,7 +37,7 @@ public class Scene {
 		scriptSystem.update(entityManager, dt);
 		physicsSystem.update(entityManager, dt);
 		pickupSystem.update(entityManager, dt);
-		
+		timeToLiveSystem.update(entityManager, dt);
 	}
 	
 	public void render(Graphics2D g, int screenW, int screenH) {
@@ -53,7 +55,7 @@ public class Scene {
 		physicsSystem = new PhysicsSystem();
 		pickupSystem = new PickupSystem();
 		scriptSystem = new ScriptSystem();
-
+		timeToLiveSystem = new TimeToLiveSystem();
 		tileMapSystem = new TileMapSystem();
 		renderingSystem = new RenderingSystem();
 		

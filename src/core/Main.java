@@ -17,6 +17,7 @@ import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
 import entities.components.transform.ParentEntity;
 import entities.components.transform.Position;
+import entities.components.util.TimeToLive;
 import entities.components.world.TileMap;
 import input.InputManager;
 
@@ -41,7 +42,7 @@ public class Main {
 		Entity player = new Entity(0,"player");
 		player.add(new Position());
 		player.add(new MovementValues());
-		player.add(new InputState().setClickToMove(true)); 
+		player.add(new InputState().setKeyboardToMove(true)); 
 		player.add(new PlayerControlled());
 		player.add(new Collision());
 		player.add(new RigidBody());
@@ -54,7 +55,7 @@ public class Main {
 		Camera cam = new Camera().setTarget(player);
 		cam.zoom = 1.5;
 		camera.add(cam);
-		//camera.add(new RotateViewToMouse());
+		camera.add(new RotateViewToMouse());
 		//cam.userOffsetY = -20;
 		
 		
@@ -71,6 +72,7 @@ public class Main {
 		Collision newCol = new Collision();
 		newCol.shape = Collision.Shape.CIRCLE;
 		newCol.radius = 16;
+		enemyBorder.add(newCol);
 		enemyBorder.add(new ScriptComponent((self, entityManager, dt) -> {
 				if(self.has(Position.class) && self.has(ParentEntity.class) && self.has(Collision.class)) {
 
@@ -90,7 +92,7 @@ public class Main {
 							+ " | player lookup: " + (playerEntity != null ? playerEntity.getEntityName() : "NULL")
 							+ " | contains player: " + col.collidedWith.contains(playerEntity));
 					if(col.collidedWith.contains(playerEntity)) {
-						pe.get(Position.class).x += 1;
+						pe.get(Position.class).y += 1;
 					}
 				}
 		}));
@@ -105,13 +107,14 @@ public class Main {
 		coin.add(new Position());
 		coin.add(new Sprite().setImageLink("blue8bitsqr.png"));
 		coin.add(new Layer().setLayerLevel(0));
+		coin.add(new TimeToLive().setTTL(10));
 		Collision coinCol = new Collision();
 		coinCol.solid = false;  // no physics response
 		coinCol.radius = 4;
 		coin.add(coinCol);
 		coin.add(new Pickup());
-		coin.get(Position.class).x = 10;
-		coin.get(Position.class).y = 10;
+		coin.get(Position.class).x = 20;
+		coin.get(Position.class).y = 20;
 
 		// tilemap
 		Entity mapEntity = new Entity(0, "tilemap");
@@ -135,8 +138,8 @@ public class Main {
 		});
 
 		scene.addEntity(player);
-		scene.addEntity(enemy);
-		scene.addEntity(enemyBorder);
+		//scene.addEntity(enemy);
+		//scene.addEntity(enemyBorder);
 		scene.addEntity(coin);
 		scene.addEntity(camera);
 

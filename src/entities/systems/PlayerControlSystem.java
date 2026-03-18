@@ -26,12 +26,18 @@ public class PlayerControlSystem implements GameSystem {
 		// find camera offset and rotation for screen-to-world conversion
 		double camOffX = 0, camOffY = 0;
 		double camRotation = 0;
+		double camZoom = 1.0;
+		int screenW = 0, screenH = 0;
+		boolean mouseLocked = im.getMouse().isLocked();
 		for (Entity ce : entityManager.getEntities()) {
 			if (ce.has(Camera.class)) {
 				Camera cam = ce.get(Camera.class);
 				camOffX = cam.offsetX;
 				camOffY = cam.offsetY;
 				camRotation = cam.rotation;
+				camZoom = cam.zoom;
+				screenW = cam.screenW;
+				screenH = cam.screenH;
 
 				// update RotateViewToMouse angle from mouse deltas
 				if (ce.has(RotateViewToMouse.class)) {
@@ -63,8 +69,15 @@ public class PlayerControlSystem implements GameSystem {
 				input.movingLeft = im.getKeyboard().A_key_pressed;
 				input.movingRight = im.getKeyboard().D_key_pressed;
 
-				input.mouseX = (int) (im.getMouse().x + camOffX);
-				input.mouseY = (int) (im.getMouse().y + camOffY);
+				// screen-to-world: invert camera transform
+				double smx = im.getMouse().x - screenW / 2.0;
+				double smy = im.getMouse().y - screenH / 2.0;
+				smx /= camZoom;
+				smy /= camZoom;
+				double sinR = Math.sin(camRotation);
+				double cosR = Math.cos(camRotation);
+				input.mouseX = (int) (smx * cosR - smy * sinR + screenW / 2.0 + camOffX);
+				input.mouseY = (int) (smx * sinR + smy * cosR + screenH / 2.0 + camOffY);
 
 				MovementValues mov = e.get(MovementValues.class);
 				Position pos = e.get(Position.class);
@@ -128,17 +141,29 @@ public class PlayerControlSystem implements GameSystem {
 
 				Position pos = e.get(Position.class);
 
-				double centerX = pos.x;
-				double centerY = pos.y;
-				
-				if (e.has(Sprite.class) && e.get(Sprite.class).image != null) {
-					centerX += e.get(Sprite.class).image.getWidth() / 2.0;
-					centerY += e.get(Sprite.class).image.getHeight() / 2.0;
-				}
+				if (mouseLocked) {
+					// mouse is locked (e.g. RotateViewToMouse) — face camera direction
+					pos.rotation = camRotation;
+				} else {
+					double centerX = pos.x;
+					double centerY = pos.y;
 
-				double worldMouseX = im.getMouse().x + camOffX;
-				double worldMouseY = im.getMouse().y + camOffY;
-				pos.rotation = -Math.atan2(worldMouseX - centerX, worldMouseY - centerY);
+					if (e.has(Sprite.class) && e.get(Sprite.class).image != null) {
+						centerX += e.get(Sprite.class).image.getWidth() / 2.0;
+						centerY += e.get(Sprite.class).image.getHeight() / 2.0;
+					}
+
+					// screen-to-world conversion for mouse position
+					double fmx = im.getMouse().x - screenW / 2.0;
+					double fmy = im.getMouse().y - screenH / 2.0;
+					fmx /= camZoom;
+					fmy /= camZoom;
+					double fsin = Math.sin(camRotation);
+					double fcos = Math.cos(camRotation);
+					double worldMouseX = fmx * fcos - fmy * fsin + screenW / 2.0 + camOffX;
+					double worldMouseY = fmx * fsin + fmy * fcos + screenH / 2.0 + camOffY;
+					pos.rotation = -Math.atan2(worldMouseX - centerX, worldMouseY - centerY);
+				}
 
 			}
 

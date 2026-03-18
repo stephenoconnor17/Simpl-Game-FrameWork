@@ -43,6 +43,8 @@ public class TileMapSystem {
 					cam.offsetX = camX;
 					cam.offsetY = camY;
 				}
+				cam.screenW = screenW;
+				cam.screenH = screenH;
 				break;
 			}
 		}
@@ -63,13 +65,25 @@ public class TileMapSystem {
 
 			if (tm.map == null || tm.tileset == null) continue;
 
-			// only draw tiles visible on screen (account for zoom)
+			// only draw tiles visible on screen (account for zoom and rotation)
 			double visibleW = screenW / camZoom;
 			double visibleH = screenH / camZoom;
-			int startCol = Math.max(0, (int) ((camX - pos.x) / tm.tileSize));
-			int startRow = Math.max(0, (int) ((camY - pos.y) / tm.tileSize));
-			int endCol = Math.min(tm.mapWidth, (int) ((camX + visibleW - pos.x) / tm.tileSize) + 2);
-			int endRow = Math.min(tm.mapHeight, (int) ((camY + visibleH - pos.y) / tm.tileSize) + 2);
+			// view center in world space
+			double viewCenterX = camX + screenW / 2.0;
+			double viewCenterY = camY + screenH / 2.0;
+			// when rotated, the axis-aligned bounding box of the visible rect is larger
+			double absCos = Math.abs(Math.cos(camRotation));
+			double absSin = Math.abs(Math.sin(camRotation));
+			double aabbHalfW = (visibleW / 2.0) * absCos + (visibleH / 2.0) * absSin;
+			double aabbHalfH = (visibleW / 2.0) * absSin + (visibleH / 2.0) * absCos;
+			double viewLeftX = viewCenterX - aabbHalfW;
+			double viewTopY = viewCenterY - aabbHalfH;
+			double viewRightX = viewCenterX + aabbHalfW;
+			double viewBottomY = viewCenterY + aabbHalfH;
+			int startCol = Math.max(0, (int) ((viewLeftX - pos.x) / tm.tileSize));
+			int startRow = Math.max(0, (int) ((viewTopY - pos.y) / tm.tileSize));
+			int endCol = Math.min(tm.mapWidth, (int) ((viewRightX - pos.x) / tm.tileSize) + 2);
+			int endRow = Math.min(tm.mapHeight, (int) ((viewBottomY - pos.y) / tm.tileSize) + 2);
 
 			for (int row = startRow; row < endRow; row++) {
 				for (int col = startCol; col < endCol; col++) {

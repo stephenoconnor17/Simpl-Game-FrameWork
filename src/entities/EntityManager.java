@@ -12,6 +12,8 @@ public class EntityManager {
 	Map<String, Entity> tagLookup;
 	int nextId = 0;
 	
+	boolean sorted = false;
+	
 	public EntityManager(){
 		entities = new ArrayList<>();
 		idLookup = new HashMap<Integer, Entity>();
@@ -24,6 +26,7 @@ public class EntityManager {
 		entities.add(temp);
 		idLookup.put(nextId, temp);
 		nextId++;
+		sorted = false;
 		
 		return temp;
 	}
@@ -35,6 +38,7 @@ public class EntityManager {
 		entities.add(temp);
 		idLookup.put(nextId, temp);
 		nextId++;
+		sorted=false;
 		
 		return temp;
 	}
@@ -50,6 +54,7 @@ public class EntityManager {
 	public void removeEntity(Entity e) {
 		entities.remove(e);
 		idLookup.remove(e.getId());
+		sorted=false;
 	}
 	
 	public void addEntity(Entity e) {
@@ -57,6 +62,8 @@ public class EntityManager {
 		if (e.getEntityName() != null) {
 			tagLookup.put(e.getEntityName(), e);
 		}
+		
+		sorted=false;
 	}
 	
 }
