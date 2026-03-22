@@ -11,7 +11,9 @@ A lightweight 2D game engine in pure Java (AWT/Swing). No frameworks, no depende
 - **Tilemap system** — Load `.map` files, render with tilesets, spawn entities from tile data (walls, triggers, etc.).
 - **Scripting** — `@FunctionalInterface` scripts attach to entities as lambdas. Full access to the entity and the entity manager each frame.
 - **Input** — Keyboard and mouse handling with screen-to-world coordinate transformation that respects camera zoom/rotation.
-- **Audio** — AudioSource and MusicSource components with play-on-spawn and event-driven playback.
+- **Lighting** — Dynamic point lights with configurable radius, intensity, and color. Ambient darkness overlay with per-light radial gradient subtraction.
+- **Audio** — AudioSource component with looping, volume control, and file path configuration.
+- **Creator factory** — Static factory class (`Creator`) for all components. Enables fast iteration via IDE autocomplete — type `Creator.` to see every available component.
 - **Parent-child entities** — Transform hierarchy via `ParentEntity`/`ChildEntity` components.
 
 ## Quick Start
@@ -39,12 +41,23 @@ player.add(new PlayerControlled());
 player.add(new Collision());
 player.add(new RigidBody());
 player.add(new Sprite().setImageLink("player.png"));
+player.add(new Light().setRadius(18).setIntensity(0.5));
 
 Entity camera = new Entity(0, "camera");
 camera.add(new Camera().setTarget(player));
 
 scene.addEntity(player);
 scene.addEntity(camera);
+```
+
+Alternatively, use the `Creator` factory for IDE autocomplete — type `Creator.` to see every available component:
+
+```java
+player.add(Creator.position());
+player.add(Creator.movementValues());
+player.add(Creator.inputState().setKeyboardToMove(true));
+player.add(Creator.sprite().setImageLink("player.png"));
+player.add(Creator.light().setRadius(18).setIntensity(0.5));
 ```
 
 Attach behavior with inline scripts:
@@ -61,10 +74,10 @@ Load a tilemap and spawn wall entities from tile data:
 ```java
 Entity map = new Entity(0, "tilemap");
 map.add(new Position());
-map.add(new TileMap(8).setTileset("tiles.png").loadMap("level.map"));
+map.add(new TileMap(8).setTileset("tiles.png").setMap("level.map"));
 scene.addEntity(map);
 
-map.get(TileMap.class).spawnEntities(entityManager, 0, 0, (tileIndex, wx, wy) -> {
+TileMapUtils.spawnEntities(map.get(TileMap.class), entityManager, 0, 0, (tileIndex, wx, wy) -> {
     if (tileIndex == 1) {
         Entity wall = new Entity(0, "wall");
         wall.add(new Position());
@@ -78,6 +91,13 @@ map.get(TileMap.class).spawnEntities(entityManager, 0, 0, (tileIndex, wx, wy) ->
 });
 ```
 
+Enable lighting with ambient darkness:
+
+```java
+scene.getLightingSystem().setEnabled(true);
+scene.getLightingSystem().setAmbientDarkness(200);
+```
+
 ## Architecture
 
 ```
@@ -86,22 +106,24 @@ src/
 ├── entities/
 │   ├── Entity, EntityManager
 │   ├── components/
+│   │   ├── Creator.java         Static factory for all components
+│   │   ├── Script.java          Functional interface for lambdas
+│   │   ├── ScriptComponent.java Script wrapper component
 │   │   ├── transform/    Position, ParentEntity, ChildEntity
 │   │   ├── movement/     MovementValues
 │   │   ├── physics/      Collision, RigidBody, Pickup
-│   │   ├── rendering/    Sprite, Animation, Camera, Layer, FaceMouse, FaceEntity
+│   │   ├── rendering/    Sprite, Animation, Camera, Layer, Light, FaceMouse, FaceEntity, RotateViewToMouse
 │   │   ├── input/        PlayerControlled, InputState
 │   │   ├── world/        TileMap, TileEntitySpawner
-│   │   ├── audio/        AudioSource, MusicSource, PlayOnSpawn, PlayOnEvent
+│   │   ├── audio/        AudioSource
 │   │   ├── rpgsystem/    Stats
 │   │   └── util/         TimeToLive
 │   └── systems/
 │       PlayerControlSystem → MovementSystem → ScriptSystem →
 │       PhysicsSystem → PickupSystem → TimeToLiveSystem (update)
-│       TileMapSystem → RenderingSystem (render)
+│       TileMapSystem → RenderingSystem → LightingSystem (render)
 ├── input/          InputManager, Keyboard, Mouse
-├── tiles/          Tile, TileMap, TileLayer, TileRenderer
-├── ui/             UIElement, UIManager
+├── utils/          TileMapUtils
 └── exceptions/     DuplicateComponentException
 ```
 
