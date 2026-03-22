@@ -13,6 +13,7 @@ import entities.components.rendering.Camera;
 import entities.components.rendering.FaceEntity;
 import entities.components.rendering.FaceMouse;
 import entities.components.rendering.Layer;
+import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
 import entities.components.transform.ParentEntity;
@@ -20,6 +21,9 @@ import entities.components.transform.Position;
 import entities.components.util.TimeToLive;
 import entities.components.world.TileMap;
 import input.InputManager;
+import utils.TileMapUtils;
+
+import entities.components.Creator.*;
 
 public class Main {
 	public static void main(String[] args) {
@@ -40,6 +44,9 @@ public class Main {
 		Scene scene = new Scene(im);
 		
 		Entity player = new Entity(0,"player");
+		
+		
+		/*
 		player.add(new Position());
 		player.add(new MovementValues());
 		player.add(new InputState().setKeyboardToMove(true)); 
@@ -47,18 +54,30 @@ public class Main {
 		player.add(new Collision());
 		player.add(new RigidBody());
 		player.add(new FaceMouse());
-		//player.add(new Camera().setTarget(player));
 		player.add(new Layer().setLayerLevel(1));
 		player.add(new Sprite().setImageLink("blue8bitsqr.png"));
+		player.add(new Light().setRadius(18).setIntensity(0.5));
+		*/
 		
+		//new static creator way of adding components (adds faster iteration by showing possible components.)
+		player.add(Creator.position());
+		player.add(Creator.movementValues());
+		player.add(Creator.inputState().setKeyboardToMove(true));
+		player.add(Creator.playerControlled());
+		player.add(Creator.collision());
+		player.add(Creator.rigidBody());
+		player.add(Creator.faceMouse());
+		player.add(Creator.layer().setLayerLevel(1));
+		player.add(Creator.sprite().setImageLink("blue8bitsqr.png"));
+		player.add(Creator.light().setRadius(18).setIntensity(1.0));
+		
+		//Entity view = new Entity(0, "view");
 		Entity camera = new Entity(0,"camera");
 		Camera cam = new Camera().setTarget(player);
 		cam.zoom = 1.5;
 		camera.add(cam);
 		camera.add(new RotateViewToMouse());
-		//cam.userOffsetY = -20;
-		
-		
+		cam.userOffsetY = -20;
 		
 		Entity enemy = new Entity(0,"enemy");
 		enemy.add(new Position());
@@ -99,7 +118,7 @@ public class Main {
 		
 		Collision col = new Collision();
 		enemy.add(col);
-		enemy.add(new FaceEntity(player));
+		//enemy.add(new FaceEntity(player));
 		enemy.get(Position.class).x = 20;
 		enemy.get(Position.class).y = 20;
 		// coin pickup - has Collision but no RigidBody, so no push-apart
@@ -115,16 +134,23 @@ public class Main {
 		coin.add(new Pickup());
 		coin.get(Position.class).x = 20;
 		coin.get(Position.class).y = 20;
-
+			
+		Entity lightSource = new Entity(0, "light source");
+		lightSource.add(new Light());
+		
+		
 		// tilemap
 		Entity mapEntity = new Entity(0, "tilemap");
 		mapEntity.add(new Position());
-		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").loadMap("test.map"));
+		mapEntity.get(Position.class).x -= 32; // moving the mapEntity moves the maps.
+		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test.map"));
 
 		scene.addEntity(mapEntity);
 
+		
 		// spawn wall entities where tile index == 1
-		mapEntity.get(TileMap.class).spawnEntities(scene.entityManager, 0, 0, (tileIndex, wx, wy) -> {
+		//the same offset must be applied to the spawned Entites!
+		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene.entityManager, -32, 0, (tileIndex, wx, wy) -> {
 			if (tileIndex == 1) {
 				Entity wall = new Entity(0, "wall");
 				wall.add(new Position());
@@ -137,8 +163,12 @@ public class Main {
 			return null;
 		});
 
+		// lighting: toggle on/off, set ambient darkness 0-255
+		scene.getLightingSystem().setEnabled(true);
+		scene.getLightingSystem().setAmbientDarkness(200);
+
 		scene.addEntity(player);
-		//scene.addEntity(enemy);
+		scene.addEntity(enemy);
 		//scene.addEntity(enemyBorder);
 		scene.addEntity(coin);
 		scene.addEntity(camera);

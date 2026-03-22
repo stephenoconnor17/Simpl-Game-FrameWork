@@ -13,6 +13,7 @@ import entities.systems.PickupSystem;
 import entities.systems.PlayerControlSystem;
 import entities.systems.ScriptSystem;
 import entities.systems.TileMapSystem;
+import entities.systems.LightingSystem;
 import entities.systems.TimeToLiveSystem;
 import input.InputManager;
 
@@ -30,6 +31,7 @@ public class Scene {
 
 	TileMapSystem tileMapSystem;
 	RenderingSystem renderingSystem;
+	LightingSystem lightingSystem;
 	
 	public void update(double dt) {
 		playerControlSystem.update(entityManager, dt);
@@ -43,6 +45,7 @@ public class Scene {
 	public void render(Graphics2D g, int screenW, int screenH) {
 		tileMapSystem.render(entityManager, g, screenW, screenH);
 		renderingSystem.render(entityManager, g, screenW, screenH);
+		lightingSystem.render(entityManager, g, screenW, screenH);
 	}
 	
 	public Scene(InputManager im) {
@@ -58,9 +61,14 @@ public class Scene {
 		timeToLiveSystem = new TimeToLiveSystem();
 		tileMapSystem = new TileMapSystem();
 		renderingSystem = new RenderingSystem();
+		lightingSystem = new LightingSystem();
 		
 	}
 	
+	public LightingSystem getLightingSystem() {
+		return lightingSystem;
+	}
+
 	public void addEntity(Entity e) {
 		this.entityManager.addEntity(e);
 	}

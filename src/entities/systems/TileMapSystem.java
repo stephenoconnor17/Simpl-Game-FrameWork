@@ -10,6 +10,7 @@ import entities.components.rendering.Camera;
 import entities.components.rendering.Sprite;
 import entities.components.transform.Position;
 import entities.components.world.TileMap;
+import utils.TileMapUtils;
 
 public class TileMapSystem {
 
@@ -32,7 +33,6 @@ public class TileMapSystem {
 						targetCenterX += target.get(Sprite.class).image.getWidth() / 2.0;
 						targetCenterY += target.get(Sprite.class).image.getHeight() / 2.0;
 					}
-					// rotate user offset so it stays relative to screen, not world
 					double sin = Math.sin(cam.rotation);
 					double cos = Math.cos(cam.rotation);
 					double rotOffX = cam.userOffsetX * cos - cam.userOffsetY * sin;
@@ -63,15 +63,18 @@ public class TileMapSystem {
 			TileMap tm = e.get(TileMap.class);
 			Position pos = e.get(Position.class);
 
+			// lazy-load tileset and map data
+			if (!tm.loaded) {
+				TileMapUtils.load(tm);
+			}
+
 			if (tm.map == null || tm.tileset == null) continue;
 
 			// only draw tiles visible on screen (account for zoom and rotation)
 			double visibleW = screenW / camZoom;
 			double visibleH = screenH / camZoom;
-			// view center in world space
 			double viewCenterX = camX + screenW / 2.0;
 			double viewCenterY = camY + screenH / 2.0;
-			// when rotated, the axis-aligned bounding box of the visible rect is larger
 			double absCos = Math.abs(Math.cos(camRotation));
 			double absSin = Math.abs(Math.sin(camRotation));
 			double aabbHalfW = (visibleW / 2.0) * absCos + (visibleH / 2.0) * absSin;
@@ -88,7 +91,7 @@ public class TileMapSystem {
 			for (int row = startRow; row < endRow; row++) {
 				for (int col = startCol; col < endCol; col++) {
 					int tileIndex = tm.map[row][col];
-					if (tileIndex < 0) continue; // -1 = empty/no tile
+					if (tileIndex < 0) continue;
 
 					BufferedImage tileImg = tm.getTileImage(tileIndex);
 					if (tileImg == null) continue;

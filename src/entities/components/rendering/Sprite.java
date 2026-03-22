@@ -7,7 +7,13 @@ import javax.imageio.ImageIO;
 
 import entities.components.Component;
 
+/**
+ * Attaches a visual image to an entity for rendering.
+ * Use {@link #setImageLink(String)} to load from res/sprites/,
+ * or {@link #setImage(String)} for a full classpath resource path.
+ */
 public class Sprite extends Component {
+	/** The loaded image to draw. */
 	public BufferedImage image;
 	
 	public Sprite setImage(String imageLink) {
