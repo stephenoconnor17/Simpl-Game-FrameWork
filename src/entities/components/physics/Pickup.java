@@ -11,4 +11,9 @@ public class Pickup extends Component {
 	public String type = "coin";
 	/** Set to true by PickupSystem once collected. */
 	public boolean collected = false;
+
+	public Pickup setType(String type) {
+		this.type = type;
+		return this;
+	}
 }

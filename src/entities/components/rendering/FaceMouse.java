@@ -7,5 +7,10 @@ import entities.components.Component;
  */
 public class FaceMouse extends Component{
 	/** Enables/disables the behaviour. */
-	public boolean faceingMouse = true;
+	public boolean facingMouse = true;
+	
+	public FaceMouse setFacingMouse(boolean facingMouse) {
+		this.facingMouse = facingMouse;
+		return this;
+	}
 }

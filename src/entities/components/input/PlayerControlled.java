@@ -8,4 +8,9 @@ import entities.components.Component;
 public class PlayerControlled extends Component {
 	/** Enables/disables player control. */
 	public boolean active = true;
+	
+	public PlayerControlled setActive(boolean activity) {
+		active = activity;
+		return this;
+	}
 }

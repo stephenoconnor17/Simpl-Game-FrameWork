@@ -14,6 +14,9 @@ import entities.systems.PlayerControlSystem;
 import entities.systems.ScriptSystem;
 import entities.systems.TileMapSystem;
 import entities.systems.LightingSystem;
+import entities.systems.AnimationSystem;
+import entities.systems.AudioSystem;
+import entities.systems.ClickSystem;
 import entities.systems.TimeToLiveSystem;
 import input.InputManager;
 
@@ -27,6 +30,9 @@ public class Scene {
 	PhysicsSystem physicsSystem;
 	PickupSystem pickupSystem;
 	ScriptSystem scriptSystem;
+	ClickSystem clickSystem;
+	AnimationSystem animationSystem;
+	AudioSystem audioSystem;
 	TimeToLiveSystem timeToLiveSystem;
 
 	TileMapSystem tileMapSystem;
@@ -36,9 +42,12 @@ public class Scene {
 	public void update(double dt) {
 		playerControlSystem.update(entityManager, dt);
 		movementSystem.update(entityManager, dt);
+		clickSystem.update(entityManager, dt);
 		scriptSystem.update(entityManager, dt);
 		physicsSystem.update(entityManager, dt);
 		pickupSystem.update(entityManager, dt);
+		animationSystem.update(entityManager, dt);
+		audioSystem.update(entityManager, dt);
 		timeToLiveSystem.update(entityManager, dt);
 	}
 	
@@ -58,6 +67,9 @@ public class Scene {
 		physicsSystem = new PhysicsSystem();
 		pickupSystem = new PickupSystem();
 		scriptSystem = new ScriptSystem();
+		clickSystem = new ClickSystem(this.inputManager);
+		animationSystem = new AnimationSystem();
+		audioSystem = new AudioSystem();
 		timeToLiveSystem = new TimeToLiveSystem();
 		tileMapSystem = new TileMapSystem();
 		renderingSystem = new RenderingSystem();

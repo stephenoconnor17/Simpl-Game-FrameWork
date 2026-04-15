@@ -13,4 +13,14 @@ public class RotateViewToMouse extends Component {
 	public double angle = 0;
 	/** Mouse-to-rotation multiplier. */
 	public double sensitivity = 0.003;
+
+	public RotateViewToMouse setEnabled(boolean enabled) {
+		this.enabled = enabled;
+		return this;
+	}
+
+	public RotateViewToMouse setSensitivity(double sensitivity) {
+		this.sensitivity = sensitivity;
+		return this;
+	}
 }

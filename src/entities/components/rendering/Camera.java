@@ -33,4 +33,20 @@ public class Camera extends Component{
 		this.target = target;
 		return this;
 	}
+	
+	public Camera setUserOffsetXY(double x, double y) {
+		this.userOffsetX = x;
+		this.userOffsetY = y;
+		return this;
+	}
+	
+	public Camera setZoom(double zoom) {
+		this.zoom = zoom;
+		return this;
+	}
+	
+	public Camera setRotation(double rotation) {
+		this.rotation = rotation;
+		return this;
+	}
 }

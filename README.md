@@ -12,8 +12,10 @@ A lightweight 2D game engine in pure Java (AWT/Swing). No frameworks, no depende
 - **Scripting** — `@FunctionalInterface` scripts attach to entities as lambdas. Full access to the entity and the entity manager each frame.
 - **Input** — Keyboard and mouse handling with screen-to-world coordinate transformation that respects camera zoom/rotation.
 - **Lighting** — Dynamic point lights with configurable radius, intensity, and color. Ambient darkness overlay with per-light radial gradient subtraction.
-- **Audio** — AudioSource component with looping, volume control, and file path configuration.
+- **Audio** — AudioSource component with looping, volume control, and spatial audio. Spatial mode attenuates volume by distance and pans stereo left/right relative to a listener entity, accounting for camera rotation.
 - **Creator factory** — Static factory class (`Creator`) for all components. Enables fast iteration via IDE autocomplete — type `Creator.` to see every available component.
+- **Animation** — Multiple named animations per entity, loaded from horizontal sprite sheets. Frame duration, looping, and runtime switching via `setCurrentAnimation()`. The system swaps the entity's sprite image each frame automatically.
+- **UI elements** — Entities can be marked as UI via the `UIElement` component. A `screenSpace` flag controls whether they render in screen coordinates (HUD, menus) or world coordinates (health bars above enemies). Children inherit `screenSpace` from their parent.
 - **Parent-child entities** — Transform hierarchy via `ParentEntity`/`ChildEntity` components.
 
 ## Quick Start
@@ -98,6 +100,61 @@ scene.getLightingSystem().setEnabled(true);
 scene.getLightingSystem().setAmbientDarkness(200);
 ```
 
+Animate an entity with multiple directional animations:
+
+```java
+player.add(Creator.animation()
+    .addAnimation("walk_down",  "player_walk_down.png",  4, 32, 32, 0.15, true)
+    .addAnimation("walk_up",    "player_walk_up.png",    4, 32, 32, 0.15, true)
+    .addAnimation("idle",       "player_idle.png",       2, 32, 32, 0.5,  true)
+    .setCurrentAnimation("idle"));
+
+// Switch animation based on input (via script)
+player.add(Creator.script((self, em, dt) -> {
+    InputState input = self.get(InputState.class);
+    Animation anim = self.get(Animation.class);
+    if (input.up)        anim.setCurrentAnimation("walk_up");
+    else if (input.down) anim.setCurrentAnimation("walk_down");
+    else                 anim.setCurrentAnimation("idle");
+}));
+```
+
+Add a screen-space HUD element:
+
+```java
+Entity hud = new Entity(0, "hud");
+hud.add(Creator.position().setXY(10, 10));
+hud.add(Creator.sprite().setImageLink("ui/healthbar.png"));
+hud.add(Creator.uiElement()); // screenSpace=true by default
+scene.addEntity(hud);
+```
+
+Or a world-space UI element (health bar above an enemy) — children inherit `screenSpace` from their parent:
+
+```java
+Entity nameplate = new Entity(0, "nameplate");
+nameplate.add(Creator.position().setXY(0, -20));
+nameplate.add(Creator.sprite().setImageLink("ui/nameplate.png"));
+nameplate.add(Creator.uiElement().setScreenSpace(false));
+nameplate.add(Creator.parentEntity().setParentEntity(enemy));
+scene.addEntity(nameplate);
+```
+
+Play a spatial sound that pans and fades with distance:
+
+```java
+Entity torch = new Entity(0, "torch");
+torch.add(Creator.position().setXY(200, 300));
+torch.add(Creator.audioSource()
+    .setFilePath("torch_crackle.wav")
+    .setSpatial(true)
+    .setListener(player)
+    .setMaxDistance(200)
+    .setLoop(true)
+    .setPlay(true));
+scene.addEntity(torch);
+```
+
 ## Architecture
 
 ```
@@ -112,7 +169,7 @@ src/
 │   │   ├── transform/    Position, ParentEntity, ChildEntity
 │   │   ├── movement/     MovementValues
 │   │   ├── physics/      Collision, RigidBody, Pickup
-│   │   ├── rendering/    Sprite, Animation, Camera, Layer, Light, FaceMouse, FaceEntity, RotateViewToMouse
+│   │   ├── rendering/    Sprite, Animation, Camera, Layer, Light, UIElement, FaceMouse, FaceEntity, RotateViewToMouse
 │   │   ├── input/        PlayerControlled, InputState
 │   │   ├── world/        TileMap, TileEntitySpawner
 │   │   ├── audio/        AudioSource
@@ -120,14 +177,15 @@ src/
 │   │   └── util/         TimeToLive
 │   └── systems/
 │       PlayerControlSystem → MovementSystem → ScriptSystem →
-│       PhysicsSystem → PickupSystem → TimeToLiveSystem (update)
+│       PhysicsSystem → PickupSystem → AnimationSystem →
+│       AudioSystem → TimeToLiveSystem (update)
 │       TileMapSystem → RenderingSystem → LightingSystem (render)
 ├── input/          InputManager, Keyboard, Mouse
 ├── utils/          TileMapUtils
 └── exceptions/     DuplicateComponentException
 ```
 
-System execution order is intentional. Player input feeds movement, scripts run before physics resolves, and rendering happens last.
+System execution order is intentional. Player input feeds movement, scripts run before physics resolves, animation updates sprites before rendering, and rendering happens last. Screen-space UI entities render after world entities (no camera transform applied).
 
 ## Pixel Styles
 

@@ -39,4 +39,41 @@ public class Collision extends Component {
 
 	/** Entities collided with this frame, cleared each update by PhysicsSystem. */
 	public List<Entity> collidedWith = new ArrayList<>();
+
+	public Collision setShape(Shape shape) {
+		this.shape = shape;
+		return this;
+	}
+
+	public Collision setSize(double width, double height) {
+		this.width = width;
+		this.height = height;
+		return this;
+	}
+
+	public Collision setRadius(double radius) {
+		this.radius = radius;
+		return this;
+	}
+
+	public Collision setSolid(boolean solid) {
+		this.solid = solid;
+		return this;
+	}
+
+	public Collision setOffset(double offsetX, double offsetY) {
+		this.offsetX = offsetX;
+		this.offsetY = offsetY;
+		return this;
+	}
+
+	public Collision setLayer(int layer) {
+		this.layer = layer;
+		return this;
+	}
+
+	public Collision setMask(int mask) {
+		this.mask = mask;
+		return this;
+	}
 }

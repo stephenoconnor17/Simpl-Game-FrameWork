@@ -18,4 +18,34 @@ public class Stats extends Component {
 	public int level = 1;
 	/** Accumulated XP. */
 	public int experience = 0;
+
+	public Stats setHealth(int health) {
+		this.health = health;
+		return this;
+	}
+
+	public Stats setMaxHealth(int maxHealth) {
+		this.maxHealth = maxHealth;
+		return this;
+	}
+
+	public Stats setAttack(int attack) {
+		this.attack = attack;
+		return this;
+	}
+
+	public Stats setDefense(int defense) {
+		this.defense = defense;
+		return this;
+	}
+
+	public Stats setLevel(int level) {
+		this.level = level;
+		return this;
+	}
+
+	public Stats setExperience(int experience) {
+		this.experience = experience;
+		return this;
+	}
 }

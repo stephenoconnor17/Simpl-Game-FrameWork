@@ -25,7 +25,7 @@ public class InputState extends Component {
 	public int targetX = 0;
 	/** Click-to-move destination Y. */
 	public int targetY = 0;
-
+	
 	/** True while navigating to a click target. */
 	public boolean isMovingToTarget = false;
 	/** Enables click-to-move input mode. */

@@ -12,4 +12,15 @@ public class Position extends Component {
 	public double y = 0.0;
 	/** Angle in radians. */
 	public double rotation = 0.0;
+
+	public Position setXY(double x, double y) {
+		this.x = x;
+		this.y = y;
+		return this;
+	}
+
+	public Position setRotation(double rotation) {
+		this.rotation = rotation;
+		return this;
+	}
 }

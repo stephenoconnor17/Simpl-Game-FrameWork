@@ -18,6 +18,7 @@ import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
 import entities.components.transform.ParentEntity;
 import entities.components.transform.Position;
+import entities.components.audio.AudioSource;
 import entities.components.util.TimeToLive;
 import entities.components.world.TileMap;
 import input.InputManager;
@@ -88,6 +89,7 @@ public class Main {
 		Entity enemyBorder = new Entity(0,"enemyBorder");
 		enemyBorder.add(new ParentEntity().setParentEntity(enemy));
 		enemyBorder.add(new Position());
+		enemyBorder.add(new AudioSource().setFilePath("beep.wav").setVolume(0.5f));
 		Collision newCol = new Collision();
 		newCol.shape = Collision.Shape.CIRCLE;
 		newCol.radius = 16;
@@ -107,12 +109,14 @@ public class Main {
 
 					Collision col = self.get(Collision.class);
 					Entity playerEntity = entityManager.getEntity("player");
-					System.out.println("collidedWith size: " + col.collidedWith.size()
-							+ " | player lookup: " + (playerEntity != null ? playerEntity.getEntityName() : "NULL")
-							+ " | contains player: " + col.collidedWith.contains(playerEntity));
+					// Play sound when player enters the border (only triggers once per contact)
+					AudioSource audio = self.get(AudioSource.class);
 					if(col.collidedWith.contains(playerEntity)) {
+						if (!audio.playing) { 
+							audio.play = true;
+						}
 						pe.get(Position.class).y += 1;
-					}
+					}//This if is a bad example of it because it fires everytime collision is detected from a moving enemy. behaviour needs proper user definition.
 				}
 		}));
 		
@@ -136,7 +140,11 @@ public class Main {
 		coin.get(Position.class).y = 20;
 			
 		Entity lightSource = new Entity(0, "light source");
-		lightSource.add(new Light());
+		lightSource.add(new Light().setIntensity(1.0).setRadius(24));
+		Position p2 = new Position();
+		p2.x = 30;
+		p2.y = 30;
+		lightSource.add(p2);
 		
 		
 		// tilemap
@@ -150,6 +158,7 @@ public class Main {
 		
 		// spawn wall entities where tile index == 1
 		//the same offset must be applied to the spawned Entites!
+		//the -32 here is based on the mapEntityes x and y. they need to sync.
 		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene.entityManager, -32, 0, (tileIndex, wx, wy) -> {
 			if (tileIndex == 1) {
 				Entity wall = new Entity(0, "wall");
@@ -164,14 +173,15 @@ public class Main {
 		});
 
 		// lighting: toggle on/off, set ambient darkness 0-255
-		scene.getLightingSystem().setEnabled(true);
-		scene.getLightingSystem().setAmbientDarkness(200);
+		scene.getLightingSystem().setEnabled(false);
+		scene.getLightingSystem().setAmbientDarkness(255);
 
 		scene.addEntity(player);
 		scene.addEntity(enemy);
-		//scene.addEntity(enemyBorder);
+		scene.addEntity(enemyBorder);
 		scene.addEntity(coin);
 		scene.addEntity(camera);
+		scene.addEntity(lightSource);
 
 		return scene;
 	}

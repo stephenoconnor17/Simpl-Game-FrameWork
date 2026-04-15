@@ -30,3 +30,9 @@ Thumbs.db
 # Environment / secrets
 .env
 
+# Node (doc generation tooling)
+node_modules/
+
+# Generated docs
+*.docx
+

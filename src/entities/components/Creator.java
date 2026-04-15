@@ -2,6 +2,7 @@ package entities.components;
 
 import entities.Entity;
 import entities.components.audio.AudioSource;
+import entities.components.input.Clickable;
 import entities.components.input.InputState;
 import entities.components.input.PlayerControlled;
 import entities.components.movement.MovementValues;
@@ -16,6 +17,7 @@ import entities.components.rendering.Layer;
 import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
+import entities.components.rendering.UIElement;
 import entities.components.transform.ChildEntity;
 import entities.components.transform.ParentEntity;
 import entities.components.transform.Position;
@@ -54,8 +56,10 @@ public final class Creator {
 	public static FaceMouse faceMouse()           { return new FaceMouse(); }
 	public static FaceEntity faceEntity(Entity e)         { return new FaceEntity(e); }
 	public static RotateViewToMouse rotateViewToMouse() { return new RotateViewToMouse(); }
+	public static UIElement uiElement()               { return new UIElement(); }
 
 	// --- Input ---
+	public static Clickable clickable()               { return new Clickable(); }
 	public static PlayerControlled playerControlled() { return new PlayerControlled(); }
 	public static InputState inputState()         { return new InputState(); }
 

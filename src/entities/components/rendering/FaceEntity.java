@@ -18,8 +18,9 @@ public class FaceEntity extends Component{
 		this.toFace = e;
 	}
 	
-	public void setEntityToFace(Entity e) {
+	public FaceEntity setEntityToFace(Entity e) {
 		this.toFace = e;
+		return this;
 	}
 	
 	public Entity getEntityToFace() {

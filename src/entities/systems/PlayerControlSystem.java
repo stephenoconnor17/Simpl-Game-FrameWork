@@ -136,7 +136,7 @@ public class PlayerControlSystem implements GameSystem {
 				FaceMouse efm = e.get(FaceMouse.class);
 
 				// faceMouse is turned off if false.
-				if (!efm.faceingMouse)
+				if (!efm.facingMouse)
 					continue;
 
 				Position pos = e.get(Position.class);
