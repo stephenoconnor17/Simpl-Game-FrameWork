@@ -9,6 +9,7 @@ import entities.components.movement.MovementValues;
 import entities.components.physics.Collision;
 import entities.components.physics.Pickup;
 import entities.components.physics.RigidBody;
+import entities.components.rendering.Animation;
 import entities.components.rendering.Camera;
 import entities.components.rendering.FaceEntity;
 import entities.components.rendering.FaceMouse;
@@ -69,7 +70,30 @@ public class Main {
 		player.add(Creator.rigidBody());
 		player.add(Creator.faceMouse());
 		player.add(Creator.layer().setLayerLevel(1));
-		player.add(Creator.sprite().setImageLink("blue8bitsqr.png"));
+		player.add(Creator.sprite()); //for animation there needs to be a sprite component.
+		//as the animation module changes the sprite module which is the logical location of sprites.
+		player.add(Creator.animation()
+				.addAnimation("idle",       "idle-animation-test.png",       3, 8, 8, 0.25, true)
+			    .setCurrentAnimation("idle"));
+		
+		/*  .addAnimation("walk_down",  "player_walk_down.png",  4, 32, 32, 0.12, true)
+	    .addAnimation("walk_up",    "player_walk_up.png",    4, 32, 32, 0.12, true)
+	    .addAnimation("walk_left",  "player_walk_left.png",  4, 32, 32, 0.12, true)
+	    .addAnimation("walk_right", "player_walk_right.png", 4, 32, 32, 0.12, true)
+	    */
+		
+		  player.add(new ScriptComponent((self, em, dt) -> {
+		      InputState in = self.get(InputState.class);
+		      Animation anim = self.get(Animation.class);
+
+		      if      (in.movingUp)    anim.setCurrentAnimation("walk_up");
+		      else if (in.movingDown)  anim.setCurrentAnimation("walk_down");
+		      else if (in.movingLeft)  anim.setCurrentAnimation("walk_left");
+		      else if (in.movingRight) anim.setCurrentAnimation("walk_right");
+		      else anim.setCurrentAnimation("idle");
+		  }));
+
+
 		player.add(Creator.light().setRadius(18).setIntensity(1.0));
 		
 		//Entity view = new Entity(0, "view");
