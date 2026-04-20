@@ -20,7 +20,9 @@ public class PhysicsSystem implements GameSystem {
 		for (Entity e : entityManager.getEntities()) {
 			if (e.has(Position.class) && e.has(Collision.class)) {
 				// clear last frame's collision data
-				e.get(Collision.class).collidedWith.clear();
+				Collision col = e.get(Collision.class);
+				col.collidedWith.clear();
+				col.markDirty();
 				collidables.add(e);
 			}
 		}
@@ -41,7 +43,9 @@ public class PhysicsSystem implements GameSystem {
 					// always flag both entities
 					colA.collidedWith.add(b);
 					colB.collidedWith.add(a);
-					//Collided with is then handled in PickupSystem. 
+					//Collided with is then handled in PickupSystem.
+					colA.markDirty();
+					colB.markDirty();
 
 					// only resolve physics if both have RigidBody and both are solid
 					if (a.has(RigidBody.class) && b.has(RigidBody.class)
@@ -267,12 +271,16 @@ public class PhysicsSystem implements GameSystem {
 			posA.y += ny * push;
 			posB.x -= nx * push;
 			posB.y -= ny * push;
+			posA.markDirty();
+			posB.markDirty();
 		} else if (aMovable) {
 			posA.x += nx * penetration;
 			posA.y += ny * penetration;
+			posA.markDirty();
 		} else {
 			posB.x -= nx * penetration;
 			posB.y -= ny * penetration;
+			posB.markDirty();
 		}
 	}
 

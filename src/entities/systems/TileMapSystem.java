@@ -45,6 +45,7 @@ public class TileMapSystem {
 				}
 				cam.screenW = screenW;
 				cam.screenH = screenH;
+				cam.markDirty();
 				break;
 			}
 		}

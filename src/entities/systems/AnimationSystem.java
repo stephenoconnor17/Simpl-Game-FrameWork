@@ -36,7 +36,10 @@ public class AnimationSystem {
 			}
 
 			BufferedImage frame = data.frames[anim.currentFrame];
-			e.get(Sprite.class).image = frame;
+			Sprite sprite = e.get(Sprite.class);
+			sprite.image = frame;
+			anim.markDirty();
+			sprite.markDirty();
 		}
 	}
 }

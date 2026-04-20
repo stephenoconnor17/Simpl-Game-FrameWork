@@ -26,6 +26,7 @@ public class PickupSystem implements GameSystem {
 					Pickup pickup = other.get(Pickup.class);
 					if (!pickup.collected) {
 						pickup.collected = true;
+						pickup.markDirty();
 						System.out.println(e.getEntityName() + " picked up " + pickup.type);
 						toRemove.add(other);
 					}

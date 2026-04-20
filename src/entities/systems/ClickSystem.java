@@ -96,6 +96,7 @@ public class ClickSystem implements GameSystem {
 					clickable.clicked = true;
 					clickable.clickX = mouseScreenX;
 					clickable.clickY = mouseScreenY;
+					clickable.markDirty();
 				}
 			} else {
 				// world entity: use world-converted mouse position
@@ -104,6 +105,7 @@ public class ClickSystem implements GameSystem {
 					clickable.clicked = true;
 					clickable.clickX = worldMouseX;
 					clickable.clickY = worldMouseY;
+					clickable.markDirty();
 				}
 			}
 		}

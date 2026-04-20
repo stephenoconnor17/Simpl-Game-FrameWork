@@ -19,6 +19,8 @@ public class Engine implements Runnable {
     private PixelStyle pixelStyle;
     private BufferedImage virtualCanvas;
 
+    private static boolean online = false;
+
     private volatile boolean running = false;
     private Thread thread;
 
@@ -140,5 +142,13 @@ public class Engine implements Runnable {
     
     public InputManager getInputManager() {
     	return this.inputManager;
+    }
+
+    public static boolean isOnline() {
+    	return online;
+    }
+
+    public static void setOnline(boolean online) {
+    	Engine.online = online;
     }
 }

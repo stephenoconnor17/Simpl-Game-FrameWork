@@ -22,6 +22,7 @@ public class TimeToLiveSystem implements GameSystem{
 			
 			TimeToLive ttl = e.get(TimeToLive.class);
 			ttl.ttl -= dt; //when delta time adds every frame at 60fps, it should then equal one second! this is true for literally every fps.
+			ttl.markDirty();
 			if(ttl.ttl <= 0) {
 				toRemove.add(e);
 			}

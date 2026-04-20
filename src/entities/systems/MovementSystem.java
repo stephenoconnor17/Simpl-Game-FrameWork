@@ -16,6 +16,7 @@ public class MovementSystem implements GameSystem {
 
 				pos.x += mov.velocityX * dt;
 				pos.y += mov.velocityY * dt;
+				pos.markDirty();
 			}
 		}
 	}

@@ -52,6 +52,8 @@ public class PlayerControlSystem implements GameSystem {
 						rv.angle += im.getMouse().deltaX * rv.sensitivity;
 						cam.rotation = rv.angle;
 						camRotation = rv.angle;
+						rv.markDirty();
+						cam.markDirty();
 					}
 				}
 				break;
@@ -68,6 +70,7 @@ public class PlayerControlSystem implements GameSystem {
 				input.movingDown = im.getKeyboard().S_key_pressed;
 				input.movingLeft = im.getKeyboard().A_key_pressed;
 				input.movingRight = im.getKeyboard().D_key_pressed;
+				input.markDirty();
 
 				// screen-to-world: invert camera transform
 				double smx = im.getMouse().x - screenW / 2.0;
@@ -84,6 +87,7 @@ public class PlayerControlSystem implements GameSystem {
 
 				mov.velocityX = 0;
 				mov.velocityY = 0;
+				mov.markDirty();
 
 				if (im.getMouse().clicked && input.clickToMove) {
 					input.targetX = input.mouseX;
@@ -129,6 +133,7 @@ public class PlayerControlSystem implements GameSystem {
 					double cos = Math.cos(camRotation);
 					mov.velocityX = inputX * cos - inputY * sin;
 					mov.velocityY = inputX * sin + inputY * cos;
+					mov.markDirty();
 				}
 			}
 
@@ -144,6 +149,7 @@ public class PlayerControlSystem implements GameSystem {
 				if (mouseLocked) {
 					// mouse is locked (e.g. RotateViewToMouse) — face camera direction
 					pos.rotation = camRotation;
+					pos.markDirty();
 				} else {
 					double centerX = pos.x;
 					double centerY = pos.y;
@@ -163,6 +169,7 @@ public class PlayerControlSystem implements GameSystem {
 					double worldMouseX = fmx * fcos - fmy * fsin + screenW / 2.0 + camOffX;
 					double worldMouseY = fmx * fsin + fmy * fcos + screenH / 2.0 + camOffY;
 					pos.rotation = -Math.atan2(worldMouseX - centerX, worldMouseY - centerY);
+					pos.markDirty();
 				}
 
 			}
@@ -198,6 +205,7 @@ public class PlayerControlSystem implements GameSystem {
 				}
 
 				pos.rotation = -Math.atan2(oeCenterX - eCenterX, oeCenterY - eCenterY);
+				pos.markDirty();
 			}
 
 

@@ -50,6 +50,7 @@ public class RenderingSystem{
 					cam.offsetX = camX;
 					cam.offsetY = camY;
 				}
+				cam.markDirty();
 				break;
 			}
 		}

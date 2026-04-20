@@ -60,6 +60,7 @@ public class AudioSystem implements GameSystem {
 					clip.stop();
 				}
 				src.playing = false;
+				src.markDirty();
 			}
 
 			// Handle play request
@@ -80,6 +81,7 @@ public class AudioSystem implements GameSystem {
 					clip.start();
 				}
 				src.playing = true;
+				src.markDirty();
 			}
 
 			// Apply spatial audio every frame while playing
@@ -95,6 +97,7 @@ public class AudioSystem implements GameSystem {
 				Clip clip = clips.get(src);
 				if (clip != null && !clip.isRunning()) {
 					src.playing = false;
+					src.markDirty();
 				}
 			}
 		}
