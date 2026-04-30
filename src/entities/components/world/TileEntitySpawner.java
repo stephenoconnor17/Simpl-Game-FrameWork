@@ -1,7 +1,7 @@
 package entities.components.world;
 
-import entities.Entity;
+import core.Scene;
 
 public interface TileEntitySpawner {
-	Entity spawnEntity(int tileIndex, int worldX, int worldY);
+	void spawnEntity(Scene scene, int tileIndex, int worldX, int worldY);
 }

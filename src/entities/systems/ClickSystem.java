@@ -6,7 +6,7 @@ import entities.components.input.Clickable;
 import entities.components.rendering.Camera;
 import entities.components.rendering.Sprite;
 import entities.components.rendering.UIElement;
-import entities.components.transform.ParentEntity;
+import entities.components.transform.ChildOf;
 import entities.components.transform.Position;
 import input.InputManager;
 
@@ -116,8 +116,8 @@ public class ClickSystem implements GameSystem {
 			return e.get(UIElement.class).screenSpace;
 		}
 		Entity current = e;
-		while (current.has(ParentEntity.class)) {
-			Entity parent = current.get(ParentEntity.class).parentEntity;
+		while (current.has(ChildOf.class)) {
+			Entity parent = current.get(ChildOf.class).parentEntity;
 			if (parent == null) break;
 			if (parent.has(UIElement.class)) {
 				return parent.get(UIElement.class).screenSpace;

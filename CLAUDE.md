@@ -12,7 +12,7 @@ Simpl is a 2D game engine written in Java using AWT/Swing. It follows an Entity-
 - **Input**: InputManager coordinates Keyboard and Mouse handlers
 
 ## Key Design Decisions
-- Entities are final — no subclassing. All behavior comes from components + systems.
+- Entities are final — no subclassing. All behavior comes from components + systems. Entity constructor is package-private; entities must be created via `scene.createEntity("name")` to ensure proper ID assignment.
 - PixelStyle defines a virtual canvas resolution; the engine renders at virtual res and scales up with nearest-neighbor for a pixel-art look.
 - Camera is its own entity, decoupled from rendered entities.
 - Script is a @FunctionalInterface so scripts can be lambdas.
@@ -21,6 +21,7 @@ Simpl is a 2D game engine written in Java using AWT/Swing. It follows an Entity-
 - Animation supports multiple named animations per entity, loaded from horizontal sprite sheets. AnimationSystem swaps sprite images per frame.
 - AudioSource supports spatial audio — volume attenuates by distance and stereo pans relative to a listener entity, accounting for camera rotation.
 - System execution order matters: PlayerControl -> Movement -> Script -> Physics -> Pickup -> Animation -> Audio -> TimeToLive (update), TileMap -> Rendering -> Lighting (render).
+- Components have a `dirty` flag for network readiness. Systems call `markDirty()` when modifying components. The flag is only set when `Engine.isOnline()` is true (controlled via `Engine.setOnline(boolean)`).
 
 ## Conventions
 - Components are plain data classes with public fields and fluent setters (e.g. `setMovable(true)`).

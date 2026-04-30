@@ -18,8 +18,8 @@ import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
 import entities.components.rendering.UIElement;
-import entities.components.transform.ChildEntity;
-import entities.components.transform.ParentEntity;
+import entities.components.transform.ChildOf;
+import entities.components.transform.ParentOf;
 import entities.components.transform.Position;
 import entities.components.rpgsystem.Stats;
 import entities.components.util.TimeToLive;
@@ -36,8 +36,8 @@ public final class Creator {
 
 	// --- Transform ---
 	public static Position position()             { return new Position(); }
-	public static ChildEntity childEntity()       { return new ChildEntity(); }
-	public static ParentEntity parentEntity()     { return new ParentEntity(); }
+	public static ParentOf parentOf()             { return new ParentOf(); }
+	public static ChildOf childOf()               { return new ChildOf(); }
 
 	// --- Movement ---
 	public static MovementValues movementValues() { return new MovementValues(); }

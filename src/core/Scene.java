@@ -81,6 +81,10 @@ public class Scene {
 		return lightingSystem;
 	}
 
+	public Entity createEntity(String name) {
+		return this.entityManager.createEntity(name);
+	}
+
 	public void addEntity(Entity e) {
 		this.entityManager.addEntity(e);
 	}

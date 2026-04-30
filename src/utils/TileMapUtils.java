@@ -9,8 +9,7 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import entities.Entity;
-import entities.EntityManager;
+import core.Scene;
 import entities.components.world.TileEntitySpawner;
 import entities.components.world.TileMap;
 
@@ -72,7 +71,7 @@ public class TileMapUtils {
 		tm.loaded = true;
 	}
 
-	public static void spawnEntities(TileMap tm, EntityManager em,
+	public static void spawnEntities(TileMap tm, Scene scene,
 			double originX, double originY, TileEntitySpawner spawner) {
 		if (tm.map == null) loadMap(tm);
 		for (int row = 0; row < tm.mapHeight; row++) {
@@ -80,10 +79,7 @@ public class TileMapUtils {
 				int tileIndex = tm.map[row][col];
 				int worldX = (int) (originX + col * tm.tileSize);
 				int worldY = (int) (originY + row * tm.tileSize);
-				Entity spawned = spawner.spawnEntity(tileIndex, worldX, worldY);
-				if (spawned != null) {
-					em.addEntity(spawned);
-				}
+				spawner.spawnEntity(scene, tileIndex, worldX, worldY);
 			}
 		}
 	}

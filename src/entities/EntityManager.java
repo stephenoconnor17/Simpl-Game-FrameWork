@@ -22,24 +22,30 @@ public class EntityManager {
 	
 	public Entity createEntity(String name) {
 		Entity temp = new Entity(nextId,name);
-		
+
 		entities.add(temp);
 		idLookup.put(nextId, temp);
+		if (name != null) {
+			tagLookup.put(name, temp);
+		}
 		nextId++;
 		sorted = false;
-		
+
 		return temp;
 	}
 	
 	public Entity createEntity(Entity e) {
 		Entity temp = e;
 		temp.setId(nextId);
-		
+
 		entities.add(temp);
 		idLookup.put(nextId, temp);
+		if (temp.getEntityName() != null) {
+			tagLookup.put(temp.getEntityName(), temp);
+		}
 		nextId++;
 		sorted=false;
-		
+
 		return temp;
 	}
 	

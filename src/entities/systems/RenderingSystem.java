@@ -12,7 +12,7 @@ import entities.components.rendering.Camera;
 import entities.components.rendering.Layer;
 import entities.components.rendering.Sprite;
 import entities.components.rendering.UIElement;
-import entities.components.transform.ParentEntity;
+import entities.components.transform.ChildOf;
 import entities.components.transform.Position;
 
 public class RenderingSystem{
@@ -132,8 +132,8 @@ public class RenderingSystem{
 
 		// walk up parent chain to inherit
 		Entity current = e;
-		while (current.has(ParentEntity.class)) {
-			Entity parent = current.get(ParentEntity.class).parentEntity;
+		while (current.has(ChildOf.class)) {
+			Entity parent = current.get(ChildOf.class).parentEntity;
 			if (parent == null) break;
 			if (parent.has(UIElement.class)) {
 				return parent.get(UIElement.class).screenSpace;

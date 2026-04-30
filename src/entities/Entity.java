@@ -21,7 +21,7 @@ public class Entity{
 																							// re-assignment.
 
 	// constructor - no default constructor for this, must have ID and name.
-	public Entity(int id, String entityName) {
+	Entity(int id, String entityName) {
 
 		this.id = id;
 		this.entityName = entityName;

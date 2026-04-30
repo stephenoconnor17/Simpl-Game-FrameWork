@@ -17,7 +17,7 @@ import entities.components.rendering.Layer;
 import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
-import entities.components.transform.ParentEntity;
+import entities.components.transform.ChildOf;
 import entities.components.transform.Position;
 import entities.components.audio.AudioSource;
 import entities.components.util.TimeToLive;
@@ -45,7 +45,7 @@ public class Main {
 		//this is hopefully how quick scenes of games can be iterated on.
 		Scene scene = new Scene(im);
 		
-		Entity player = new Entity(0,"player");
+		Entity player = scene.createEntity("player");
 		
 		
 		/*
@@ -96,22 +96,22 @@ public class Main {
 
 		player.add(Creator.light().setRadius(18).setIntensity(1.0));
 		
-		//Entity view = new Entity(0, "view");
-		Entity camera = new Entity(0,"camera");
+		//Entity view = scene.createEntity("view");
+		Entity camera = scene.createEntity("camera");
 		Camera cam = new Camera().setTarget(player);
 		cam.zoom = 1.5;
 		camera.add(cam);
 		camera.add(new RotateViewToMouse());
 		cam.userOffsetY = -20;
 		
-		Entity enemy = new Entity(0,"enemy");
+		Entity enemy = scene.createEntity("enemy");
 		enemy.add(new Position());
 		enemy.add(new RigidBody());
 		enemy.add(new Sprite().setImageLink("blue8bitsqr.png"));
 		enemy.add(new Layer().setLayerLevel(0));
 		
-		Entity enemyBorder = new Entity(0,"enemyBorder");
-		enemyBorder.add(new ParentEntity().setParentEntity(enemy));
+		Entity enemyBorder = scene.createEntity("enemyBorder");
+		enemyBorder.add(new ChildOf().setParentEntity(enemy));
 		enemyBorder.add(new Position());
 		enemyBorder.add(new AudioSource().setFilePath("beep.wav").setVolume(0.5f));
 		Collision newCol = new Collision();
@@ -119,10 +119,10 @@ public class Main {
 		newCol.radius = 16;
 		enemyBorder.add(newCol);
 		enemyBorder.add(new ScriptComponent((self, entityManager, dt) -> {
-				if(self.has(Position.class) && self.has(ParentEntity.class) && self.has(Collision.class)) {
+				if(self.has(Position.class) && self.has(ChildOf.class) && self.has(Collision.class)) {
 
 					Position thisP = self.get(Position.class);
-					Entity pe = self.get(ParentEntity.class).parentEntity;
+					Entity pe = self.get(ChildOf.class).parentEntity;
 					Position pePos = pe.get(Position.class);
 					thisP.x = pePos.x;
 					thisP.y = pePos.y;
@@ -150,7 +150,7 @@ public class Main {
 		enemy.get(Position.class).x = 20;
 		enemy.get(Position.class).y = 20;
 		// coin pickup - has Collision but no RigidBody, so no push-apart
-		Entity coin = new Entity(0, "coin");
+		Entity coin = scene.createEntity("coin");
 		coin.add(new Position());
 		coin.add(new Sprite().setImageLink("blue8bitsqr.png"));
 		coin.add(new Layer().setLayerLevel(0));
@@ -163,7 +163,7 @@ public class Main {
 		coin.get(Position.class).x = 20;
 		coin.get(Position.class).y = 20;
 			
-		Entity lightSource = new Entity(0, "light source");
+		Entity lightSource = scene.createEntity("light source");
 		lightSource.add(new Light().setIntensity(1.0).setRadius(24));
 		Position p2 = new Position();
 		p2.x = 30;
@@ -172,40 +172,29 @@ public class Main {
 		
 		
 		// tilemap
-		Entity mapEntity = new Entity(0, "tilemap");
+		Entity mapEntity = scene.createEntity("tilemap");
 		mapEntity.add(new Position());
 		mapEntity.get(Position.class).x -= 32; // moving the mapEntity moves the maps.
 		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test.map"));
 
-		scene.addEntity(mapEntity);
-
-		
 		// spawn wall entities where tile index == 1
 		//the same offset must be applied to the spawned Entites!
 		//the -32 here is based on the mapEntityes x and y. they need to sync.
-		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene.entityManager, -32, 0, (tileIndex, wx, wy) -> {
+		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene, -32, 0, (sc, tileIndex, wx, wy) -> {
 			if (tileIndex == 1) {
-				Entity wall = new Entity(0, "wall");
+				Entity wall = sc.createEntity("wall");
 				wall.add(new Position());
 				wall.get(Position.class).x = wx;
 				wall.get(Position.class).y = wy;
 				wall.add(new Collision());
 				wall.add(new RigidBody().setMovable(false));
-				return wall;
 			}
-			return null;
 		});
 
 		// lighting: toggle on/off, set ambient darkness 0-255
 		scene.getLightingSystem().setEnabled(false);
 		scene.getLightingSystem().setAmbientDarkness(255);
 
-		scene.addEntity(player);
-		scene.addEntity(enemy);
-		scene.addEntity(enemyBorder);
-		scene.addEntity(coin);
-		scene.addEntity(camera);
-		scene.addEntity(lightSource);
 
 		return scene;
 	}

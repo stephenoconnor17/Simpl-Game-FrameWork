@@ -17,6 +17,7 @@ A lightweight 2D game engine in pure Java (AWT/Swing). No frameworks, no depende
 - **Animation** — Multiple named animations per entity, loaded from horizontal sprite sheets. Frame duration, looping, and runtime switching via `setCurrentAnimation()`. The system swaps the entity's sprite image each frame automatically.
 - **UI elements** — Entities can be marked as UI via the `UIElement` component. A `screenSpace` flag controls whether they render in screen coordinates (HUD, menus) or world coordinates (health bars above enemies). Children inherit `screenSpace` from their parent.
 - **Parent-child entities** — Transform hierarchy via `ParentEntity`/`ChildEntity` components.
+- **Network-ready dirty tracking** — Components have a `dirty` flag automatically set by systems when state changes. Gated behind `Engine.setOnline(true)` so there's zero overhead in single-player. Entities are created through `scene.createEntity()` to guarantee unique IDs suitable for network sync.
 
 ## Quick Start
 
@@ -35,7 +36,7 @@ Build a scene by creating entities and attaching components:
 ```java
 Scene scene = new Scene(inputManager);
 
-Entity player = new Entity(0, "player");
+Entity player = scene.createEntity("player");
 player.add(new Position());
 player.add(new MovementValues());
 player.add(new InputState().setKeyboardToMove(true));
@@ -45,11 +46,8 @@ player.add(new RigidBody());
 player.add(new Sprite().setImageLink("player.png"));
 player.add(new Light().setRadius(18).setIntensity(0.5));
 
-Entity camera = new Entity(0, "camera");
+Entity camera = scene.createEntity("camera");
 camera.add(new Camera().setTarget(player));
-
-scene.addEntity(player);
-scene.addEntity(camera);
 ```
 
 Alternatively, use the `Creator` factory for IDE autocomplete — type `Creator.` to see every available component:
@@ -74,22 +72,19 @@ entity.add(new ScriptComponent((self, entityManager, dt) -> {
 Load a tilemap and spawn wall entities from tile data:
 
 ```java
-Entity map = new Entity(0, "tilemap");
+Entity map = scene.createEntity("tilemap");
 map.add(new Position());
 map.add(new TileMap(8).setTileset("tiles.png").setMap("level.map"));
-scene.addEntity(map);
 
-TileMapUtils.spawnEntities(map.get(TileMap.class), entityManager, 0, 0, (tileIndex, wx, wy) -> {
+TileMapUtils.spawnEntities(map.get(TileMap.class), scene, 0, 0, (sc, tileIndex, wx, wy) -> {
     if (tileIndex == 1) {
-        Entity wall = new Entity(0, "wall");
+        Entity wall = sc.createEntity("wall");
         wall.add(new Position());
         wall.get(Position.class).x = wx;
         wall.get(Position.class).y = wy;
         wall.add(new Collision());
         wall.add(new RigidBody().setMovable(false));
-        return wall;
     }
-    return null;
 });
 ```
 
@@ -122,28 +117,26 @@ player.add(Creator.script((self, em, dt) -> {
 Add a screen-space HUD element:
 
 ```java
-Entity hud = new Entity(0, "hud");
+Entity hud = scene.createEntity("hud");
 hud.add(Creator.position().setXY(10, 10));
 hud.add(Creator.sprite().setImageLink("ui/healthbar.png"));
 hud.add(Creator.uiElement()); // screenSpace=true by default
-scene.addEntity(hud);
 ```
 
 Or a world-space UI element (health bar above an enemy) — children inherit `screenSpace` from their parent:
 
 ```java
-Entity nameplate = new Entity(0, "nameplate");
+Entity nameplate = scene.createEntity("nameplate");
 nameplate.add(Creator.position().setXY(0, -20));
 nameplate.add(Creator.sprite().setImageLink("ui/nameplate.png"));
 nameplate.add(Creator.uiElement().setScreenSpace(false));
-nameplate.add(Creator.parentEntity().setParentEntity(enemy));
-scene.addEntity(nameplate);
+nameplate.add(Creator.childOf().setParentEntity(enemy));
 ```
 
 Play a spatial sound that pans and fades with distance:
 
 ```java
-Entity torch = new Entity(0, "torch");
+Entity torch = scene.createEntity("torch");
 torch.add(Creator.position().setXY(200, 300));
 torch.add(Creator.audioSource()
     .setFilePath("torch_crackle.wav")
@@ -152,7 +145,6 @@ torch.add(Creator.audioSource()
     .setMaxDistance(200)
     .setLoop(true)
     .setPlay(true));
-scene.addEntity(torch);
 ```
 
 ## Architecture
@@ -213,5 +205,5 @@ Sprites go in `res/sprites/`, maps in `res/maps/`.
 
 - **Composition over inheritance** — `Entity` is `final`. All behavior comes from combining components and systems.
 - **Systems own the logic** — Components are plain data with public fields and fluent setters. Zero logic in components.
-- **Scenes are self-contained** — A `Scene` wires up all systems and holds the `EntityManager`. Swap scenes to change game states.
+- **Scenes are self-contained** — A `Scene` wires up all systems and holds the `EntityManager`. Create entities via `scene.createEntity("name")`. Swap scenes to change game states.
 - **No external dependencies** — Pure Java standard library. The engine runs anywhere Java runs.

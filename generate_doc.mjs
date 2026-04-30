@@ -110,7 +110,7 @@ const doc = new Document({
       para("    4.4  GameSystem Interface"),
       para("5.  Components — In Depth"),
       para("    5.1  Transform: Position"),
-      para("    5.2  Transform: ParentEntity & ChildEntity"),
+      para("    5.2  Transform: ChildOf & ParentOf"),
       para("    5.3  Movement: MovementValues"),
       para("    5.4  Input: InputState & PlayerControlled"),
       para("    5.5  Physics: Collision"),
@@ -182,8 +182,8 @@ const doc = new Document({
 │   │   ├── ScriptComponent.java   — Script wrapper component
 │   │   ├── transform/
 │   │   │   ├── Position.java
-│   │   │   ├── ParentEntity.java
-│   │   │   └── ChildEntity.java
+│   │   │   ├── ChildOf.java
+│   │   │   └── ParentOf.java
 │   │   ├── movement/
 │   │   │   └── MovementValues.java
 │   │   ├── input/
@@ -396,7 +396,7 @@ public void remove(Class<? extends Component> type) {
 
       bold("Usage Example:"),
       ...codeBlock(
-`Entity player = new Entity(0, "player");
+`Entity player = scene.createEntity("player");
 player.add(new Position())
       .add(new MovementValues())
       .add(new Sprite().setImageLink("hero.png"));
@@ -472,13 +472,13 @@ public Entity getEntity(String tag) {
       bold("Used By: MovementSystem, PlayerControlSystem, PhysicsSystem, RenderingSystem, TileMapSystem, ScriptSystem"),
 
       // 5.2 Parent/Child
-      h2("5.2 Transform: ParentEntity & ChildEntity"),
+      h2("5.2 Transform: ChildOf & ParentOf"),
       para("Package: entities.components.transform"),
-      para("These components establish parent-child relationships between entities. ParentEntity stores a reference to a parent entity, and ChildEntity stores a reference to a child. These are used in custom scripts to synchronise positions — for example, making an enemy's detection radius follow the enemy's position."),
+      para("These components establish parent-child relationships between entities. ChildOf stores a reference to a parent entity, and ParentOf stores a reference to a child. These are used in custom scripts to synchronise positions — for example, making an enemy's detection radius follow the enemy's position."),
       ...codeBlock(
-`public class ParentEntity extends Component {
+`public class ChildOf extends Component {
     public Entity parentEntity;
-    public ParentEntity setParentEntity(Entity e) {
+    public ChildOf setParentEntity(Entity e) {
         this.parentEntity = e;
         return this;
     }
@@ -725,7 +725,7 @@ public interface Script {
 `new ScriptComponent((self, entityManager, dt) -> {
     // Sync position to parent entity
     Position thisP = self.get(Position.class);
-    Entity parent = self.get(ParentEntity.class).parentEntity;
+    Entity parent = self.get(ChildOf.class).parentEntity;
     Position parentPos = parent.get(Position.class);
     thisP.x = parentPos.x;
     thisP.y = parentPos.y;
@@ -1285,8 +1285,8 @@ player.add(Creator.sprite().setImageLink("player.png"));`),
       ...codeBlock(
 `// Transform
 Creator.position()              → new Position()
-Creator.childEntity()           → new ChildEntity()
-Creator.parentEntity()          → new ParentEntity()
+Creator.childOf()               → new ChildOf()
+Creator.parentOf()              → new ParentOf()
 
 // Movement
 Creator.movementValues()        → new MovementValues()
@@ -1375,7 +1375,7 @@ enemy.add(new Collision());
 
 // Invisible circle collider that follows the enemy
 Entity enemyBorder = new Entity(0, "enemyBorder");
-enemyBorder.add(new ParentEntity().setParentEntity(enemy));
+enemyBorder.add(new ChildOf().setParentEntity(enemy));
 enemyBorder.add(new Position());
 enemyBorder.add(new ScriptComponent((self, em, dt) -> {
     // Sync position to parent + react to player proximity
