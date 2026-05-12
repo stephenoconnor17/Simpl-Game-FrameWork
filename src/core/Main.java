@@ -17,6 +17,7 @@ import entities.components.rendering.Layer;
 import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
+import entities.components.rendering.UIElement;
 import entities.components.transform.ChildOf;
 import entities.components.transform.Position;
 import entities.components.audio.AudioSource;
@@ -99,7 +100,7 @@ public class Main {
 		//Entity view = scene.createEntity("view");
 		Entity camera = scene.createEntity("camera");
 		Camera cam = new Camera().setTarget(player);
-		cam.zoom = 1.5;
+		//cam.zoom = 1.5;
 		camera.add(cam);
 		camera.add(new RotateViewToMouse());
 		cam.userOffsetY = -20;
@@ -140,7 +141,7 @@ public class Main {
 							audio.play = true;
 						}
 						pe.get(Position.class).y += 1;
-					}//This if is a bad example of it because it fires everytime collision is detected from a moving enemy. behaviour needs proper user definition.
+					}//This if statement is a bad example of it because it fires everytime collision is detected from a moving enemy. behaviour needs proper user definition.
 				}
 		}));
 		
@@ -190,7 +191,24 @@ public class Main {
 				wall.add(new RigidBody().setMovable(false));
 			}
 		});
+		
+		Entity menu = scene.createEntity("menu");
+		menu.add(Creator.sprite().setImageLink("menutest.png"));  // 32x8 image
+		menu.add(new UIElement()
+		    .setScreenSpace(true)
+		    .setAnchorX(0.5f)
+		    .setAnchorY(0.5f));
 
+		menu.add(new ScriptComponent((self, em, dt) -> {
+		    Sprite spr = self.get(Sprite.class);
+		    if (spr != null && spr.image != null) {
+		        System.out.println("menu sprite: " + spr.image.getWidth() + " x " + spr.image.getHeight());
+		    } else {
+		        System.out.println("menu sprite: image not loaded yet");
+		    }
+		}));
+		//This runs every frame and prints the actual loaded dimensions. Let it run for a second, then tell me what it prints.
+		
 		// lighting: toggle on/off, set ambient darkness 0-255
 		scene.getLightingSystem().setEnabled(false);
 		scene.getLightingSystem().setAmbientDarkness(255);

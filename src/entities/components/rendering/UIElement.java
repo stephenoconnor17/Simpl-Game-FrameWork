@@ -17,8 +17,24 @@ public class UIElement extends Component {
 	/** If true, render in screen coordinates (no camera transform). */
 	public boolean screenSpace = true;
 
+	/** Screen-space anchor X (0.0 = left, 0.5 = center, 1.0 = right). */
+	public double anchorX = 0.0;
+
+	/** Screen-space anchor Y (0.0 = top, 0.5 = center, 1.0 = bottom). */
+	public double anchorY = 0.0;
+
 	public UIElement setScreenSpace(boolean screenSpace) {
 		this.screenSpace = screenSpace;
+		return this;
+	}
+
+	public UIElement setAnchorX(double anchorX) {
+		this.anchorX = anchorX;
+		return this;
+	}
+
+	public UIElement setAnchorY(double anchorY) {
+		this.anchorY = anchorY;
 		return this;
 	}
 }

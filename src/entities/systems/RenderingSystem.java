@@ -65,11 +65,11 @@ public class RenderingSystem{
 		List<Entity> screenUIEntities = new ArrayList<>();
 
 		for (Entity e : MyList) {
-			if (!e.has(Sprite.class) || !e.has(Position.class)) continue;
+			if (!e.has(Sprite.class)) continue;
 
 			if (isScreenSpace(e)) {
 				screenUIEntities.add(e);
-			} else {
+			} else if (e.has(Position.class)) {
 				worldEntities.add(e);
 			}
 		}
@@ -101,20 +101,25 @@ public class RenderingSystem{
 
 		g.setTransform(baseTransform);
 
-		// render screen-space UI entities without camera transform
+		// render screen-space UI entities using anchor percentages
 		for(Entity e : screenUIEntities) {
-			Position pos = e.get(Position.class);
 			Sprite spr = e.get(Sprite.class);
+			UIElement ui = e.has(UIElement.class) ? e.get(UIElement.class) : null;
+
+			double drawX = ui != null ? ui.anchorX * screenW : 0;
+			double drawY = ui != null ? ui.anchorY * screenH : 0;
+
+			double rotation = e.has(Position.class) ? e.get(Position.class).rotation : 0;
 
 			AffineTransform old = g.getTransform();
 
-			double centerX = pos.x + spr.image.getWidth() / 2.0;
-			double centerY = pos.y + spr.image.getHeight() / 2.0;
+			double centerX = drawX + spr.image.getWidth() / 2.0;
+			double centerY = drawY + spr.image.getHeight() / 2.0;
 
-			g.rotate(pos.rotation, centerX, centerY);
-			g.translate(pos.x, pos.y);
+			g.rotate(rotation, centerX, centerY);
+			g.translate(drawX, drawY);
 			g.drawImage(spr.image, 0, 0, null);
-			g.translate(-pos.x, -pos.y);
+			g.translate(-drawX, -drawY);
 
 			g.setTransform(old);
 		}
