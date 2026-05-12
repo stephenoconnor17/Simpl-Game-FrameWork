@@ -42,6 +42,7 @@ import input.InputManager;
 public class ClickSystem implements GameSystem {
 
 	private final InputManager im;
+	/** Tracks entities already warned about missing bounds to avoid log spam. */
 	private final Set<Entity> warnedNoBounds = new HashSet<>();
 
 	public ClickSystem(InputManager im) {
@@ -203,6 +204,7 @@ public class ClickSystem implements GameSystem {
 		return null;
 	}
 
+	/** Checks the entity's own UIElement, then walks up the parent chain to inherit screenSpace. */
 	private boolean isScreenSpace(Entity e) {
 		if (e.has(UIElement.class)) {
 			return e.get(UIElement.class).screenSpace;

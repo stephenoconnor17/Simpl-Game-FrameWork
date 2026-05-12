@@ -49,6 +49,33 @@ public class Main {
 	public static Scene myScene(InputManager im, Engine e, Data data) {
 		Scene scene = new Scene(im, e);
 		
+		
+		Entity fpsCounter = scene.createEntity("fps");
+		fpsCounter.add(Creator.text()
+		    .setText("fps: --")
+		    .setFont(new Font("Consolas", Font.PLAIN, 16))
+		    .setColour(Color.yellow));
+		fpsCounter.add(Creator.uiElement()
+		    .setScreenSpace(true)
+		    .setAnchorX(0.0)
+		    .setAnchorY(0.05));
+		fpsCounter.add(new ScriptComponent(new Script() {
+		    long lastTime = System.nanoTime();
+		    int frames = 0;
+		    int fps = 0;
+
+		    @Override
+		    public void update(Entity self, EntityManager em, double dt) {
+		        frames++;
+		        long now = System.nanoTime();
+		        if (now - lastTime >= 1_000_000_000L) {
+		            fps = frames;
+		            frames = 0;
+		            lastTime = now;
+		        }
+		        self.get(Text.class).setText("fps: " + fps);
+		    }
+		}));
 		// first time entering — build the player, otherwise reuse the one in data
 		if (data.player == null) {
 			data.player = buildPlayer(scene);
@@ -56,13 +83,18 @@ public class Main {
 			scene.addEntity(data.player);
 		}
 		Entity player = data.player;
+		// reset position and click-to-move target for this scene's spawn point
+		player.get(Position.class).x = 0;
+		player.get(Position.class).y = 0;
+		player.get(InputState.class).isMovingToTarget = false;
 
 		Entity camera = scene.createEntity("camera");
 		Camera cam = new Camera().setTarget(player);
 		camera.add(cam);
 		cam.userOffsetY = -20;
-		cam.zoom = 1.5;
+		//cam.zoom = 1.5;
 		
+		// enemy with a child border entity that detects player collision
 		Entity enemy = scene.createEntity("enemy");
 		enemy.add(new Position());
 		enemy.add(new RigidBody());
@@ -107,6 +139,7 @@ public class Main {
 		enemy.get(Position.class).x = 20;
 		enemy.get(Position.class).y = 20;
 
+		// coin pickup — has Collision but no RigidBody, so no push-apart
 		Entity coin = scene.createEntity("coin");
 		coin.add(new Position());
 		coin.add(new Sprite().setImageLink("blue8bitsqr.png"));
@@ -144,6 +177,7 @@ public class Main {
 			}
 		});
 		
+		// centered screen-space menu sprite using anchor positioning
 		Entity menu = scene.createEntity("menu");
 		menu.add(Creator.sprite().setImageLink("menutest.png"));
 		menu.add(new UIElement()
@@ -160,6 +194,7 @@ public class Main {
 		    }
 		}));
 		
+		// clickable text that shows current time and changes colour on hover/press
 		Entity textTest = scene.createEntity("text");
 		textTest.add(Creator.text().setText("").setFont(new Font("Consolas", Font.PLAIN, 16)).setColour(Color.white));
 		textTest.add(Creator.uiElement().setAnchorX(0.0).setScreenSpace(true).setAnchorY(0.0));
@@ -197,15 +232,44 @@ public class Main {
 		return scene;
 	}
 
+	/** A second scene demonstrating runtime scene transitions. Reuses the player from Data. */
 	public static Scene houseScene(InputManager im, Engine e, Data data) {
 		Scene scene = new Scene(im, e);
 
+		Entity fpsCounter = scene.createEntity("fps");
+		fpsCounter.add(Creator.text()
+		    .setText("fps: --")
+		    .setFont(new Font("Consolas", Font.PLAIN, 16))
+		    .setColour(Color.yellow));
+		fpsCounter.add(Creator.uiElement()
+		    .setScreenSpace(true)
+		    .setAnchorX(0.0)
+		    .setAnchorY(0.05));
+		fpsCounter.add(new ScriptComponent(new Script() {
+		    long lastTime = System.nanoTime();
+		    int frames = 0;
+		    int fps = 0;
+
+		    @Override
+		    public void update(Entity self, EntityManager em, double dt) {
+		        frames++;
+		        long now = System.nanoTime();
+		        if (now - lastTime >= 1_000_000_000L) {
+		            fps = frames;
+		            frames = 0;
+		            lastTime = now;
+		        }
+		        self.get(Text.class).setText("fps: " + fps);
+		    }
+		}));
+		
 		// player is loaded from data — must exist by now
 		scene.addEntity(data.player);
 		Entity player = data.player;
-		// reposition for the house spawn
+		// reposition for the house spawn and cancel any in-flight click-to-move
 		player.get(Position.class).x = 20;
 		player.get(Position.class).y = 20;
+		player.get(InputState.class).isMovingToTarget = false;
 
 		Entity camera = scene.createEntity("camera");
 		Camera cam = new Camera().setTarget(player);
@@ -255,6 +319,7 @@ public class Main {
 		return scene;
 	}
 
+	/** Creates the player entity with movement, animation, collision, and lighting. Built once, reused across scenes. */
 	private static Entity buildPlayer(Scene scene) {
 		Entity player = scene.createEntity("player");
 		player.add(Creator.position());

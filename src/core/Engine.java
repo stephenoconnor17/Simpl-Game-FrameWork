@@ -20,6 +20,9 @@ public class Engine implements Runnable {
     private BufferedImage virtualCanvas;
 
     private static boolean online = false;
+    
+    private long tick = 0;
+    private double gameTime = 0;
 
     private volatile boolean running = false;
     private Thread thread;
@@ -55,7 +58,7 @@ public class Engine implements Runnable {
         running = false;
     }
 
-    @Override
+   /* @Override
     public void run() {
 
         final int FPS = 60;
@@ -79,6 +82,55 @@ public class Engine implements Runnable {
             }
             
             update(dt);
+            render();
+
+            long workTimeNs = System.nanoTime() - startTime;
+            long remainingNs = FRAME_NS - workTimeNs;
+
+            if (remainingNs > 0) {
+                try {
+                    Thread.sleep(
+                            remainingNs / 1_000_000L,
+                            (int) (remainingNs % 1_000_000L)
+                    );
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+    }
+    */
+    
+    @Override
+    public void run() {
+
+        final double FIXED_STEP = 1.0 / 60.0;
+        final long FRAME_NS = 1_000_000_000L / 60;  // render cap, separate concern
+
+        long lastTime = System.nanoTime();
+        double accumulator = 0;
+
+        while (running) {
+
+            long startTime = System.nanoTime();
+            long elapsedNs = startTime - lastTime;
+            lastTime = startTime;
+
+            double frameTime = elapsedNs / 1_000_000_000.0;
+            if (frameTime > 0.25) frameTime = 0.25;
+
+            if (inputManager.getKeyboard().T_key_pressed) {
+                this.stop();
+            }
+
+            accumulator += frameTime;
+            while (accumulator >= FIXED_STEP) {
+                update(FIXED_STEP);
+                tick++;
+                gameTime += FIXED_STEP;
+                accumulator -= FIXED_STEP;
+            }
             render();
 
             long workTimeNs = System.nanoTime() - startTime;
@@ -136,6 +188,8 @@ public class Engine implements Runnable {
     	bs.show();
     }
     
+    
+    
     public void setScene(Scene scene) {
     	this.currentScene = scene;
     }
@@ -150,5 +204,13 @@ public class Engine implements Runnable {
 
     public static void setOnline(boolean online) {
     	Engine.online = online;
+    }
+    
+    public long getTick() {
+    	return this.tick;
+    }
+    
+    public double getGameTime() {
+    	return this.getGameTime();
     }
 }

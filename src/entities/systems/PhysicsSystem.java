@@ -35,6 +35,10 @@ public class PhysicsSystem implements GameSystem {
 				Collision colA = a.get(Collision.class);
 				Collision colB = b.get(Collision.class);
 
+				if (a.has(RigidBody.class) && b.has(RigidBody.class)
+				        && !a.get(RigidBody.class).movable
+				        && !b.get(RigidBody.class).movable) continue;
+				
 				// layer/mask filter - skip if neither cares about the other
 				if ((colA.layer & colB.mask) == 0 && (colB.layer & colA.mask) == 0) continue;
 

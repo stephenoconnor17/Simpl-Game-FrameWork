@@ -13,8 +13,11 @@ import java.awt.image.BufferedImage;
 
 public class Mouse implements MouseListener, MouseMotionListener{
 
+	/** Virtual canvas mouse X coordinate, scaled from raw screen pixels. */
 	public int x = 0, y = 0;
+	/** True for one frame after a mouse click. Consumed by ClickSystem. */
 	public boolean clicked = false;
+	/** True while the mouse button is held down. Used for continuous press detection. */
 	public boolean down = false;
 
 	// mouse delta for locked mode (set each frame by pollLocked)
