@@ -1,8 +1,12 @@
 package core;
 
+import java.awt.Color;
+import java.awt.Font;
+
 import entities.Entity;
 import entities.EntityManager;
 import entities.components.*;
+import entities.components.input.Clickable;
 import entities.components.input.InputState;
 import entities.components.input.PlayerControlled;
 import entities.components.movement.MovementValues;
@@ -17,6 +21,7 @@ import entities.components.rendering.Layer;
 import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
+import entities.components.rendering.Text;
 import entities.components.rendering.UIElement;
 import entities.components.transform.ChildOf;
 import entities.components.transform.Position;
@@ -33,77 +38,30 @@ public class Main {
 		
 		Window w = new Window("Hello");
 		Engine e = new Engine(w.getRenderSurface(), PixelStyle.BIT_8);
-		//set scene here.
-		e.setScene(myScene(e.getInputManager()));
-		//
-		w.setEngine(e);
 
+		Data data = new Data();
+		e.setScene(myScene(e.getInputManager(), e, data));
+
+		w.setEngine(e);
 		e.start();
 	}
 	
-	public static Scene myScene(InputManager im) {
-		//this method is pure testing.
-		//this is hopefully how quick scenes of games can be iterated on.
-		Scene scene = new Scene(im);
+	public static Scene myScene(InputManager im, Engine e, Data data) {
+		Scene scene = new Scene(im, e);
 		
-		Entity player = scene.createEntity("player");
-		
-		
-		/*
-		player.add(new Position());
-		player.add(new MovementValues());
-		player.add(new InputState().setKeyboardToMove(true)); 
-		player.add(new PlayerControlled());
-		player.add(new Collision());
-		player.add(new RigidBody());
-		player.add(new FaceMouse());
-		player.add(new Layer().setLayerLevel(1));
-		player.add(new Sprite().setImageLink("blue8bitsqr.png"));
-		player.add(new Light().setRadius(18).setIntensity(0.5));
-		*/
-		
-		//new static creator way of adding components (adds faster iteration by showing possible components.)
-		player.add(Creator.position());
-		player.add(Creator.movementValues());
-		player.add(Creator.inputState().setKeyboardToMove(true));
-		player.add(Creator.playerControlled());
-		player.add(Creator.collision());
-		player.add(Creator.rigidBody());
-		player.add(Creator.faceMouse());
-		player.add(Creator.layer().setLayerLevel(1));
-		player.add(Creator.sprite()); //for animation there needs to be a sprite component.
-		//as the animation module changes the sprite module which is the logical location of sprites.
-		player.add(Creator.animation()
-				.addAnimation("idle",       "idle-animation-test.png",       3, 8, 8, 0.25, true)
-			    .setCurrentAnimation("idle"));
-		
-		/*  .addAnimation("walk_down",  "player_walk_down.png",  4, 32, 32, 0.12, true)
-	    .addAnimation("walk_up",    "player_walk_up.png",    4, 32, 32, 0.12, true)
-	    .addAnimation("walk_left",  "player_walk_left.png",  4, 32, 32, 0.12, true)
-	    .addAnimation("walk_right", "player_walk_right.png", 4, 32, 32, 0.12, true)
-	    */
-		
-		  player.add(new ScriptComponent((self, em, dt) -> {
-		      InputState in = self.get(InputState.class);
-		      Animation anim = self.get(Animation.class);
+		// first time entering — build the player, otherwise reuse the one in data
+		if (data.player == null) {
+			data.player = buildPlayer(scene);
+		} else {
+			scene.addEntity(data.player);
+		}
+		Entity player = data.player;
 
-		      if      (in.movingUp)    anim.setCurrentAnimation("walk_up");
-		      else if (in.movingDown)  anim.setCurrentAnimation("walk_down");
-		      else if (in.movingLeft)  anim.setCurrentAnimation("walk_left");
-		      else if (in.movingRight) anim.setCurrentAnimation("walk_right");
-		      else anim.setCurrentAnimation("idle");
-		  }));
-
-
-		player.add(Creator.light().setRadius(18).setIntensity(1.0));
-		
-		//Entity view = scene.createEntity("view");
 		Entity camera = scene.createEntity("camera");
 		Camera cam = new Camera().setTarget(player);
-		//cam.zoom = 1.5;
 		camera.add(cam);
-		camera.add(new RotateViewToMouse());
 		cam.userOffsetY = -20;
+		cam.zoom = 1.5;
 		
 		Entity enemy = scene.createEntity("enemy");
 		enemy.add(new Position());
@@ -134,30 +92,28 @@ public class Main {
 
 					Collision col = self.get(Collision.class);
 					Entity playerEntity = entityManager.getEntity("player");
-					// Play sound when player enters the border (only triggers once per contact)
 					AudioSource audio = self.get(AudioSource.class);
 					if(col.collidedWith.contains(playerEntity)) {
 						if (!audio.playing) { 
 							audio.play = true;
 						}
 						pe.get(Position.class).y += 1;
-					}//This if statement is a bad example of it because it fires everytime collision is detected from a moving enemy. behaviour needs proper user definition.
+					}
 				}
 		}));
 		
 		Collision col = new Collision();
 		enemy.add(col);
-		//enemy.add(new FaceEntity(player));
 		enemy.get(Position.class).x = 20;
 		enemy.get(Position.class).y = 20;
-		// coin pickup - has Collision but no RigidBody, so no push-apart
+
 		Entity coin = scene.createEntity("coin");
 		coin.add(new Position());
 		coin.add(new Sprite().setImageLink("blue8bitsqr.png"));
 		coin.add(new Layer().setLayerLevel(0));
 		coin.add(new TimeToLive().setTTL(10));
 		Collision coinCol = new Collision();
-		coinCol.solid = false;  // no physics response
+		coinCol.solid = false;
 		coinCol.radius = 4;
 		coin.add(coinCol);
 		coin.add(new Pickup());
@@ -171,16 +127,12 @@ public class Main {
 		p2.y = 30;
 		lightSource.add(p2);
 		
-		
 		// tilemap
 		Entity mapEntity = scene.createEntity("tilemap");
 		mapEntity.add(new Position());
-		mapEntity.get(Position.class).x -= 32; // moving the mapEntity moves the maps.
-		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test.map"));
+		mapEntity.get(Position.class).x -= 32;
+		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test_big.map"));
 
-		// spawn wall entities where tile index == 1
-		//the same offset must be applied to the spawned Entites!
-		//the -32 here is based on the mapEntityes x and y. they need to sync.
 		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene, -32, 0, (sc, tileIndex, wx, wy) -> {
 			if (tileIndex == 1) {
 				Entity wall = sc.createEntity("wall");
@@ -193,7 +145,7 @@ public class Main {
 		});
 		
 		Entity menu = scene.createEntity("menu");
-		menu.add(Creator.sprite().setImageLink("menutest.png"));  // 32x8 image
+		menu.add(Creator.sprite().setImageLink("menutest.png"));
 		menu.add(new UIElement()
 		    .setScreenSpace(true)
 		    .setAnchorX(0.5f)
@@ -207,13 +159,128 @@ public class Main {
 		        System.out.println("menu sprite: image not loaded yet");
 		    }
 		}));
-		//This runs every frame and prints the actual loaded dimensions. Let it run for a second, then tell me what it prints.
 		
-		// lighting: toggle on/off, set ambient darkness 0-255
+		Entity textTest = scene.createEntity("text");
+		textTest.add(Creator.text().setText("").setFont(new Font("Consolas", Font.PLAIN, 16)).setColour(Color.white));
+		textTest.add(Creator.uiElement().setAnchorX(0.0).setScreenSpace(true).setAnchorY(0.0));
+		textTest.add(Creator.clickable().setEnabled(true).setBounds(120, 20));
+		textTest.add(new ScriptComponent((self, em, dt) -> {
+			Text t = self.get(Text.class);
+			Clickable c = self.get(Clickable.class);
+			
+			t.setText(String.valueOf(System.currentTimeMillis()));
+			
+			if(c.pressed) {
+				t.colour = Color.blue;
+			}else if(c.hovered) {
+				t.colour = Color.green;
+			}else {
+				t.colour = Color.white;
+			}
+		}));
+		
+		// scene transition button — click to enter the house
+		Entity goToHouse = scene.createEntity("goToHouse");
+		goToHouse.add(Creator.text().setText("> enter house").setFont(new Font("Consolas", Font.PLAIN, 16)).setColour(Color.yellow));
+		goToHouse.add(Creator.uiElement().setAnchorX(0.0).setScreenSpace(true).setAnchorY(0.9));
+		goToHouse.add(Creator.clickable().setEnabled(true).setBounds(140, 20));
+		goToHouse.add(new ScriptComponent((self, em, dt) -> {
+			Clickable c = self.get(Clickable.class);
+			if (c.clicked) {
+				e.setScene(houseScene(im, e, data));
+			}
+		}));
+		
 		scene.getLightingSystem().setEnabled(false);
 		scene.getLightingSystem().setAmbientDarkness(255);
 
+		return scene;
+	}
+
+	public static Scene houseScene(InputManager im, Engine e, Data data) {
+		Scene scene = new Scene(im, e);
+
+		// player is loaded from data — must exist by now
+		scene.addEntity(data.player);
+		Entity player = data.player;
+		// reposition for the house spawn
+		player.get(Position.class).x = 20;
+		player.get(Position.class).y = 20;
+
+		Entity camera = scene.createEntity("camera");
+		Camera cam = new Camera().setTarget(player);
+		camera.add(cam);
+		cam.userOffsetY = -20;
+
+		// house tilemap
+		Entity mapEntity = scene.createEntity("tilemap");
+		mapEntity.add(new Position());
+		mapEntity.get(Position.class).x -= 32;
+		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test.map"));
+
+		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene, -32, 0, (sc, tileIndex, wx, wy) -> {
+			if (tileIndex == 1) {
+				Entity wall = sc.createEntity("wall");
+				wall.add(new Position());
+				wall.get(Position.class).x = wx;
+				wall.get(Position.class).y = wy;
+				wall.add(new Collision());
+				wall.add(new RigidBody().setMovable(false));
+			}
+		});
+
+		// mom — scene-local, fresh each visit, never touches GameData
+		Entity mom = scene.createEntity("mom");
+		mom.add(new Position());
+		mom.get(Position.class).x = 40;
+		mom.get(Position.class).y = 40;
+		mom.add(new Sprite().setImageLink("blue8bitsqr.png"));
+		mom.add(new Layer().setLayerLevel(0));
+
+		// back-to-world button
+		Entity goBack = scene.createEntity("goBack");
+		goBack.add(Creator.text().setText("< leave house").setFont(new Font("Consolas", Font.PLAIN, 16)).setColour(Color.yellow));
+		goBack.add(Creator.uiElement().setAnchorX(0.0).setScreenSpace(true).setAnchorY(0.9));
+		goBack.add(Creator.clickable().setEnabled(true).setBounds(140, 20));
+		goBack.add(new ScriptComponent((self, em, dt) -> {
+			Clickable c = self.get(Clickable.class);
+			if (c.clicked) {
+				e.setScene(myScene(im, e, data));
+			}
+		}));
+
+		scene.getLightingSystem().setEnabled(false);
+		scene.getLightingSystem().setAmbientDarkness(255);
 
 		return scene;
+	}
+
+	private static Entity buildPlayer(Scene scene) {
+		Entity player = scene.createEntity("player");
+		player.add(Creator.position());
+		player.add(Creator.movementValues());
+		player.add(Creator.inputState().setClickToMove(true));
+		player.add(Creator.playerControlled());
+		player.add(Creator.collision());
+		player.add(Creator.rigidBody());
+		player.add(Creator.faceMouse());
+		player.add(Creator.layer().setLayerLevel(1));
+		player.add(Creator.sprite());
+		player.add(Creator.animation()
+				.addAnimation("idle", "idle-animation-test.png", 3, 8, 8, 0.25, true)
+				.setCurrentAnimation("idle"));
+
+		player.add(new ScriptComponent((self, em, dt) -> {
+			InputState in = self.get(InputState.class);
+			Animation anim = self.get(Animation.class);
+			if      (in.movingUp)    anim.setCurrentAnimation("walk_up");
+			else if (in.movingDown)  anim.setCurrentAnimation("walk_down");
+			else if (in.movingLeft)  anim.setCurrentAnimation("walk_left");
+			else if (in.movingRight) anim.setCurrentAnimation("walk_right");
+			else anim.setCurrentAnimation("idle");
+		}));
+
+		player.add(Creator.light().setRadius(18).setIntensity(1.0));
+		return player;
 	}
 }

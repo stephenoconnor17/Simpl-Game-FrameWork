@@ -23,6 +23,8 @@ import input.InputManager;
 public class Scene {
 	EntityManager entityManager;
 	
+	Engine engine;
+	
 	InputManager inputManager;
 	
 	PlayerControlSystem playerControlSystem;
@@ -40,9 +42,12 @@ public class Scene {
 	LightingSystem lightingSystem;
 	
 	public void update(double dt) {
+		
+		 clickSystem.update(entityManager, dt);
 		playerControlSystem.update(entityManager, dt);
+		//playerControlSystem.update(entityManager, dt);
 		movementSystem.update(entityManager, dt);
-		clickSystem.update(entityManager, dt);
+		//clickSystem.update(entityManager, dt);
 		scriptSystem.update(entityManager, dt);
 		physicsSystem.update(entityManager, dt);
 		pickupSystem.update(entityManager, dt);
@@ -52,13 +57,16 @@ public class Scene {
 	}
 	
 	public void render(Graphics2D g, int screenW, int screenH) {
-		tileMapSystem.render(entityManager, g, screenW, screenH);
-		renderingSystem.render(entityManager, g, screenW, screenH);
-		lightingSystem.render(entityManager, g, screenW, screenH);
+	    tileMapSystem.render(entityManager, g, screenW, screenH);
+	    renderingSystem.renderWorld(entityManager, g, screenW, screenH);
+	    lightingSystem.render(entityManager, g, screenW, screenH);
+	    renderingSystem.renderUI(entityManager, g, screenW, screenH);
 	}
 	
-	public Scene(InputManager im) {
+	public Scene(InputManager im, Engine engine) {
 		this.inputManager = im;
+		
+		this.engine = engine;
 		
 		entityManager = new EntityManager();
 		
@@ -74,7 +82,6 @@ public class Scene {
 		tileMapSystem = new TileMapSystem();
 		renderingSystem = new RenderingSystem();
 		lightingSystem = new LightingSystem();
-		
 	}
 	
 	public LightingSystem getLightingSystem() {

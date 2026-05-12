@@ -15,6 +15,7 @@ public class Mouse implements MouseListener, MouseMotionListener{
 
 	public int x = 0, y = 0;
 	public boolean clicked = false;
+	public boolean down = false;
 
 	// mouse delta for locked mode (set each frame by pollLocked)
 	public int deltaX = 0, deltaY = 0;
@@ -103,11 +104,13 @@ public class Mouse implements MouseListener, MouseMotionListener{
 	@Override
 	public void mousePressed(MouseEvent e) {
 		updateXandY(e.getX(),e.getY());
+		down = true;
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		updateXandY(e.getX(),e.getY());
+		down = false;
 	}
 
 	@Override

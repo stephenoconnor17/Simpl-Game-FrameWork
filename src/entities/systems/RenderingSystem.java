@@ -1,6 +1,7 @@
 package entities.systems;
 
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,25 +12,102 @@ import entities.EntityManager;
 import entities.components.rendering.Camera;
 import entities.components.rendering.Layer;
 import entities.components.rendering.Sprite;
+import entities.components.rendering.Text;
 import entities.components.rendering.UIElement;
 import entities.components.transform.ChildOf;
 import entities.components.transform.Position;
 
-public class RenderingSystem{
+public class RenderingSystem {
 
-	public void render(EntityManager entities, Graphics2D g, int screenW, int screenH) {
-		List<Entity> MyList = entities.getEntities();
+	// camera state, recomputed each frame in renderWorld and reused by renderUI
+	private double camX, camY, camRotation, camZoom;
+	private List<Entity> worldEntities = new ArrayList<>();
+	private List<Entity> screenUIEntities = new ArrayList<>();
 
-		MyList.sort(Comparator.comparingInt(e -> e.has(Layer.class) ? e.get(Layer.class).layerLevel : 0));
+	public void renderWorld(EntityManager entities, Graphics2D g, int screenW, int screenH) {
+		List<Entity> sorted = entities.getEntities();
+		sorted.sort(Comparator.comparingInt(e -> e.has(Layer.class) ? e.get(Layer.class).layerLevel : 0));
 
-		// find camera offset
-		double camX = 0, camY = 0;
-		double camRotation = 0;
+		resolveCamera(sorted, screenW, screenH);
+		partition(sorted);
 
-		for (Entity e : MyList) {
+		AffineTransform baseTransform = g.getTransform();
+		g.translate(screenW / 2.0, screenH / 2.0);
+		g.scale(camZoom, camZoom);
+		g.rotate(-camRotation);
+		g.translate(-screenW / 2.0, -screenH / 2.0);
+		g.translate(-camX, -camY);
+
+		for (Entity e : worldEntities) {
+			Position pos = e.get(Position.class);
+			AffineTransform old = g.getTransform();
+
+			if (e.has(Sprite.class)) {
+				Sprite spr = e.get(Sprite.class);
+				double centerX = pos.x + spr.image.getWidth() / 2.0;
+				double centerY = pos.y + spr.image.getHeight() / 2.0;
+				g.rotate(pos.rotation, centerX, centerY);
+				g.translate(pos.x, pos.y);
+				g.drawImage(spr.image, 0, 0, null);
+				g.setTransform(old);
+				old = g.getTransform();
+			}
+
+			if (e.has(Text.class)) {
+				Text t = e.get(Text.class);
+				g.setFont(t.font);
+				g.setColor(t.colour);
+				g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+				                   RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+				int baseline = g.getFontMetrics().getAscent();
+				g.drawString(t.text, (int) pos.x, (int) pos.y + baseline);
+			}
+
+			g.setTransform(old);
+		}
+
+		g.setTransform(baseTransform);
+	}
+
+	public void renderUI(EntityManager entities, Graphics2D g, int screenW, int screenH) {
+		for (Entity e : screenUIEntities) {
+			UIElement ui = e.has(UIElement.class) ? e.get(UIElement.class) : null;
+			double drawX = ui != null ? ui.anchorX * screenW : 0;
+			double drawY = ui != null ? ui.anchorY * screenH : 0;
+
+			AffineTransform old = g.getTransform();
+
+			if (e.has(Sprite.class)) {
+				Sprite spr = e.get(Sprite.class);
+				g.translate(drawX, drawY);
+				g.drawImage(spr.image, 0, 0, null);
+				g.setTransform(old);
+				old = g.getTransform();
+			}
+
+			if (e.has(Text.class)) {
+				Text t = e.get(Text.class);
+				g.setFont(t.font);
+				g.setColor(t.colour);
+				g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+				                   RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+				int baseline = g.getFontMetrics().getAscent();
+				g.drawString(t.text, (int) drawX, (int) drawY + baseline);
+			}
+
+			g.setTransform(old);
+		}
+	}
+
+	private void resolveCamera(List<Entity> sorted, int screenW, int screenH) {
+		camX = 0; camY = 0; camRotation = 0; camZoom = 1.0;
+
+		for (Entity e : sorted) {
 			if (e.has(Camera.class)) {
 				Camera cam = e.get(Camera.class);
 				camRotation = cam.rotation;
+				camZoom = cam.zoom;
+
 				if (cam.target != null && cam.target.has(Position.class)) {
 					Entity target = cam.target;
 					Position tp = target.get(Position.class);
@@ -39,7 +117,6 @@ public class RenderingSystem{
 						targetCenterX += target.get(Sprite.class).image.getWidth() / 2.0;
 						targetCenterY += target.get(Sprite.class).image.getHeight() / 2.0;
 					}
-					// rotate user offset so it stays relative to screen, not world
 					double sin = Math.sin(cam.rotation);
 					double cos = Math.cos(cam.rotation);
 					double rotOffX = cam.userOffsetX * cos - cam.userOffsetY * sin;
@@ -54,18 +131,14 @@ public class RenderingSystem{
 				break;
 			}
 		}
+	}
 
-		double camZoom = 1.0;
-		for (Entity e : MyList) {
-			if (e.has(Camera.class)) { camZoom = e.get(Camera.class).zoom; break; }
-		}
+	private void partition(List<Entity> sorted) {
+		worldEntities.clear();
+		screenUIEntities.clear();
 
-		// split into world entities and screen-space UI entities
-		List<Entity> worldEntities = new ArrayList<>();
-		List<Entity> screenUIEntities = new ArrayList<>();
-
-		for (Entity e : MyList) {
-			if (!e.has(Sprite.class)) continue;
+		for (Entity e : sorted) {
+			if (!e.has(Sprite.class) && !e.has(Text.class)) continue;
 
 			if (isScreenSpace(e)) {
 				screenUIEntities.add(e);
@@ -73,69 +146,12 @@ public class RenderingSystem{
 				worldEntities.add(e);
 			}
 		}
-
-		// render world entities with camera transform
-		AffineTransform baseTransform = g.getTransform();
-		g.translate(screenW / 2.0, screenH / 2.0);
-		g.scale(camZoom, camZoom);
-		g.rotate(-camRotation);
-		g.translate(-screenW / 2.0, -screenH / 2.0);
-		g.translate(-camX, -camY);
-
-		for(Entity e : worldEntities) {
-			Position pos = e.get(Position.class);
-			Sprite spr = e.get(Sprite.class);
-
-			AffineTransform old = g.getTransform();
-
-			double centerX = pos.x + spr.image.getWidth() / 2.0;
-			double centerY = pos.y + spr.image.getHeight() / 2.0;
-
-			g.rotate(pos.rotation, centerX, centerY);
-			g.translate(pos.x, pos.y);
-			g.drawImage(spr.image, 0, 0, null);
-			g.translate(-pos.x, -pos.y);
-
-			g.setTransform(old);
-		}
-
-		g.setTransform(baseTransform);
-
-		// render screen-space UI entities using anchor percentages
-		for(Entity e : screenUIEntities) {
-			Sprite spr = e.get(Sprite.class);
-			UIElement ui = e.has(UIElement.class) ? e.get(UIElement.class) : null;
-
-			double drawX = ui != null ? ui.anchorX * screenW : 0;
-			double drawY = ui != null ? ui.anchorY * screenH : 0;
-
-			double rotation = e.has(Position.class) ? e.get(Position.class).rotation : 0;
-
-			AffineTransform old = g.getTransform();
-
-			double centerX = drawX + spr.image.getWidth() / 2.0;
-			double centerY = drawY + spr.image.getHeight() / 2.0;
-
-			g.rotate(rotation, centerX, centerY);
-			g.translate(drawX, drawY);
-			g.drawImage(spr.image, 0, 0, null);
-			g.translate(-drawX, -drawY);
-
-			g.setTransform(old);
-		}
 	}
 
-	/**
-	 * Determines if an entity should render in screen space.
-	 * Checks the entity's own UIElement first, then walks up the parent
-	 * chain to inherit screenSpace from the root UI entity.
-	 */
 	private boolean isScreenSpace(Entity e) {
 		if (e.has(UIElement.class)) {
 			return e.get(UIElement.class).screenSpace;
 		}
-
-		// walk up parent chain to inherit
 		Entity current = e;
 		while (current.has(ChildOf.class)) {
 			Entity parent = current.get(ChildOf.class).parentEntity;
@@ -145,8 +161,6 @@ public class RenderingSystem{
 			}
 			current = parent;
 		}
-
 		return false;
 	}
-
 }

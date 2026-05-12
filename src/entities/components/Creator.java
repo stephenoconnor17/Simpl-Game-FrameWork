@@ -17,6 +17,7 @@ import entities.components.rendering.Layer;
 import entities.components.rendering.Light;
 import entities.components.rendering.RotateViewToMouse;
 import entities.components.rendering.Sprite;
+import entities.components.rendering.Text;
 import entities.components.rendering.UIElement;
 import entities.components.transform.ChildOf;
 import entities.components.transform.ParentOf;
@@ -57,6 +58,7 @@ public final class Creator {
 	public static FaceEntity faceEntity(Entity e)         { return new FaceEntity(e); }
 	public static RotateViewToMouse rotateViewToMouse() { return new RotateViewToMouse(); }
 	public static UIElement uiElement()               { return new UIElement(); }
+	public static Text text()                         { return new Text(); }
 
 	// --- Input ---
 	public static Clickable clickable()               { return new Clickable(); }

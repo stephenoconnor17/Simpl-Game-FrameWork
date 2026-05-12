@@ -15,8 +15,9 @@ A lightweight 2D game engine in pure Java (AWT/Swing). No frameworks, no depende
 - **Audio** — AudioSource component with looping, volume control, and spatial audio. Spatial mode attenuates volume by distance and pans stereo left/right relative to a listener entity, accounting for camera rotation.
 - **Creator factory** — Static factory class (`Creator`) for all components. Enables fast iteration via IDE autocomplete — type `Creator.` to see every available component.
 - **Animation** — Multiple named animations per entity, loaded from horizontal sprite sheets. Frame duration, looping, and runtime switching via `setCurrentAnimation()`. The system swaps the entity's sprite image each frame automatically.
-- **UI elements** — Entities can be marked as UI via the `UIElement` component. A `screenSpace` flag controls whether they render in screen coordinates (HUD, menus) or world coordinates (health bars above enemies). Children inherit `screenSpace` from their parent.
-- **Parent-child entities** — Transform hierarchy via `ParentEntity`/`ChildEntity` components.
+- **Text rendering** — `Text` component for rendering text with configurable font, size, and colour. Works in both world-space and screen-space. RenderingSystem draws text with pixel-snapped positioning and anti-aliasing disabled for crisp pixel-art text.
+- **UI elements** — Entities can be marked as UI via the `UIElement` component. A `screenSpace` flag controls whether they render in screen coordinates (HUD, menus) or world coordinates (health bars above enemies). Screen-space elements use `anchorX`/`anchorY` (0.0–1.0) to position as a percentage of the screen — no `Position` component needed. Children inherit `screenSpace` from their root parent.
+- **Parent-child entities** — Transform hierarchy via `ChildOf`/`ParentOf` components. `ChildOf` supports `offsetX`/`offsetY` for positioning relative to the parent and `inheritRotation` for rotation inheritance. MovementSystem syncs child positions to their parent each frame.
 - **Network-ready dirty tracking** — Components have a `dirty` flag automatically set by systems when state changes. Gated behind `Engine.setOnline(true)` so there's zero overhead in single-player. Entities are created through `scene.createEntity()` to guarantee unique IDs suitable for network sync.
 
 ## Quick Start
@@ -114,23 +115,46 @@ player.add(Creator.script((self, em, dt) -> {
 }));
 ```
 
-Add a screen-space HUD element:
+Add a screen-space HUD element anchored to the top-left:
 
 ```java
 Entity hud = scene.createEntity("hud");
-hud.add(Creator.position().setXY(10, 10));
 hud.add(Creator.sprite().setImageLink("ui/healthbar.png"));
-hud.add(Creator.uiElement()); // screenSpace=true by default
+hud.add(Creator.uiElement()); // screenSpace=true, anchored to top-left (0,0) by default
 ```
 
-Or a world-space UI element (health bar above an enemy) — children inherit `screenSpace` from their parent:
+Center a menu on screen using anchor percentages:
+
+```java
+Entity menu = scene.createEntity("menu");
+menu.add(Creator.sprite().setImageLink("menutest.png"));
+menu.add(Creator.uiElement()
+    .setScreenSpace(true)
+    .setAnchorX(0.5)   // 0.0 = left, 0.5 = center, 1.0 = right
+    .setAnchorY(0.5));  // 0.0 = top,  0.5 = center, 1.0 = bottom
+```
+
+Add a world-space UI element (health bar above an enemy) with a child offset:
 
 ```java
 Entity nameplate = scene.createEntity("nameplate");
-nameplate.add(Creator.position().setXY(0, -20));
 nameplate.add(Creator.sprite().setImageLink("ui/nameplate.png"));
 nameplate.add(Creator.uiElement().setScreenSpace(false));
-nameplate.add(Creator.childOf().setParentEntity(enemy));
+nameplate.add(Creator.childOf()
+    .setParentEntity(enemy)
+    .setOffsetX(0)
+    .setOffsetY(-20));  // 20 pixels above parent
+```
+
+Render text in the world or on screen:
+
+```java
+Entity label = scene.createEntity("label");
+label.add(Creator.position().setXY(100, 50));
+label.add(Creator.text()
+    .setText("Hello World")
+    .setFont(new Font("Monospaced", Font.PLAIN, 8))
+    .setColour(Color.WHITE));
 ```
 
 Play a spatial sound that pans and fades with distance:
@@ -158,10 +182,10 @@ src/
 │   │   ├── Creator.java         Static factory for all components
 │   │   ├── Script.java          Functional interface for lambdas
 │   │   ├── ScriptComponent.java Script wrapper component
-│   │   ├── transform/    Position, ParentEntity, ChildEntity
+│   │   ├── transform/    Position, ChildOf, ParentOf
 │   │   ├── movement/     MovementValues
 │   │   ├── physics/      Collision, RigidBody, Pickup
-│   │   ├── rendering/    Sprite, Animation, Camera, Layer, Light, UIElement, FaceMouse, FaceEntity, RotateViewToMouse
+│   │   ├── rendering/    Sprite, Animation, Camera, Layer, Light, UIElement, Text, FaceMouse, FaceEntity, RotateViewToMouse
 │   │   ├── input/        PlayerControlled, InputState
 │   │   ├── world/        TileMap, TileEntitySpawner
 │   │   ├── audio/        AudioSource
