@@ -213,4 +213,8 @@ public class Engine implements Runnable {
     public double getGameTime() {
     	return this.getGameTime();
     }
+
+    public PixelStyle getPixelStyle() {
+    	return this.pixelStyle;
+    }
 }

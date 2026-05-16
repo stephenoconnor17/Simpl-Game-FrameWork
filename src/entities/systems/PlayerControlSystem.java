@@ -16,9 +16,13 @@ import input.InputManager;
 public class PlayerControlSystem implements GameSystem {
 
 	InputManager im;
+	private final int virtualW;
+	private final int virtualH;
 
-	public PlayerControlSystem(InputManager im) {
+	public PlayerControlSystem(InputManager im, int virtualW, int virtualH) {
 		this.im = im;
+		this.virtualW = virtualW;
+		this.virtualH = virtualH;
 	}
 
 	@Override
@@ -27,7 +31,6 @@ public class PlayerControlSystem implements GameSystem {
 		double camOffX = 0, camOffY = 0;
 		double camRotation = 0;
 		double camZoom = 1.0;
-		int screenW = 0, screenH = 0;
 		boolean mouseLocked = im.getMouse().isLocked();
 		for (Entity ce : entityManager.getEntities()) {
 			if (ce.has(Camera.class)) {
@@ -36,8 +39,6 @@ public class PlayerControlSystem implements GameSystem {
 				camOffY = cam.offsetY;
 				camRotation = cam.rotation;
 				camZoom = cam.zoom;
-				screenW = cam.screenW;
-				screenH = cam.screenH;
 
 				// update RotateViewToMouse angle from mouse deltas
 				if (ce.has(RotateViewToMouse.class)) {
@@ -73,14 +74,14 @@ public class PlayerControlSystem implements GameSystem {
 				input.markDirty();
 
 				// screen-to-world: invert camera transform
-				double smx = im.getMouse().x - screenW / 2.0;
-				double smy = im.getMouse().y - screenH / 2.0;
+				double smx = im.getMouse().x - virtualW / 2.0;
+				double smy = im.getMouse().y - virtualH / 2.0;
 				smx /= camZoom;
 				smy /= camZoom;
 				double sinR = Math.sin(camRotation);
 				double cosR = Math.cos(camRotation);
-				input.mouseX = (int) (smx * cosR - smy * sinR + screenW / 2.0 + camOffX);
-				input.mouseY = (int) (smx * sinR + smy * cosR + screenH / 2.0 + camOffY);
+				input.mouseX = (int) (smx * cosR - smy * sinR + virtualW / 2.0 + camOffX);
+				input.mouseY = (int) (smx * sinR + smy * cosR + virtualH / 2.0 + camOffY);
 
 				MovementValues mov = e.get(MovementValues.class);
 				Position pos = e.get(Position.class);
@@ -160,14 +161,14 @@ public class PlayerControlSystem implements GameSystem {
 					}
 
 					// screen-to-world conversion for mouse position
-					double fmx = im.getMouse().x - screenW / 2.0;
-					double fmy = im.getMouse().y - screenH / 2.0;
+					double fmx = im.getMouse().x - virtualW / 2.0;
+					double fmy = im.getMouse().y - virtualH / 2.0;
 					fmx /= camZoom;
 					fmy /= camZoom;
 					double fsin = Math.sin(camRotation);
 					double fcos = Math.cos(camRotation);
-					double worldMouseX = fmx * fcos - fmy * fsin + screenW / 2.0 + camOffX;
-					double worldMouseY = fmx * fsin + fmy * fcos + screenH / 2.0 + camOffY;
+					double worldMouseX = fmx * fcos - fmy * fsin + virtualW / 2.0 + camOffX;
+					double worldMouseY = fmx * fsin + fmy * fcos + virtualH / 2.0 + camOffY;
 					pos.rotation = -Math.atan2(worldMouseX - centerX, worldMouseY - centerY);
 					pos.markDirty();
 				}

@@ -109,12 +109,14 @@ public class Scene {
 		
 		entityManager = new EntityManager();
 		
-		playerControlSystem = new PlayerControlSystem(this.inputManager);
+		playerControlSystem = new PlayerControlSystem(this.inputManager,
+				engine.getPixelStyle().virtualWidth, engine.getPixelStyle().virtualHeight);
 		movementSystem = new MovementSystem();
 		physicsSystem = new PhysicsSystem();
 		pickupSystem = new PickupSystem();
 		scriptSystem = new ScriptSystem();
-		clickSystem = new ClickSystem(this.inputManager);
+		clickSystem = new ClickSystem(this.inputManager,
+				engine.getPixelStyle().virtualWidth, engine.getPixelStyle().virtualHeight);
 		animationSystem = new AnimationSystem();
 		audioSystem = new AudioSystem();
 		timeToLiveSystem = new TimeToLiveSystem();

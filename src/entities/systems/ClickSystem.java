@@ -42,11 +42,15 @@ import input.InputManager;
 public class ClickSystem implements GameSystem {
 
 	private final InputManager im;
+	private final int virtualW;
+	private final int virtualH;
 	/** Tracks entities already warned about missing bounds to avoid log spam. */
 	private final Set<Entity> warnedNoBounds = new HashSet<>();
 
-	public ClickSystem(InputManager im) {
+	public ClickSystem(InputManager im, int virtualW, int virtualH) {
 		this.im = im;
+		this.virtualW = virtualW;
+		this.virtualH = virtualH;
 	}
 
 	@Override
@@ -70,11 +74,10 @@ public class ClickSystem implements GameSystem {
 		boolean clickEvent = im.getMouse().clicked;
 		//if (clickEvent) im.getMouse().clicked = false;
 
-		// find camera for screen-to-world conversion
+		// find camera for screen-to-world conversion (offset, zoom, rotation only)
 		double camOffX = 0, camOffY = 0;
 		double camRotation = 0;
 		double camZoom = 1.0;
-		int screenW = 0, screenH = 0;
 		for (Entity e : entities.getEntities()) {
 			if (e.has(Camera.class)) {
 				Camera cam = e.get(Camera.class);
@@ -82,21 +85,19 @@ public class ClickSystem implements GameSystem {
 				camOffY = cam.offsetY;
 				camRotation = cam.rotation;
 				camZoom = cam.zoom;
-				screenW = cam.screenW;
-				screenH = cam.screenH;
 				break;
 			}
 		}
 
-		// screen-to-world conversion
-		double smx = mouseScreenX - screenW / 2.0;
-		double smy = mouseScreenY - screenH / 2.0;
+		// screen-to-world conversion (uses virtual canvas dimensions, not camera)
+		double smx = mouseScreenX - virtualW / 2.0;
+		double smy = mouseScreenY - virtualH / 2.0;
 		smx /= camZoom;
 		smy /= camZoom;
 		double sinR = Math.sin(camRotation);
 		double cosR = Math.cos(camRotation);
-		double worldMouseX = smx * cosR - smy * sinR + screenW / 2.0 + camOffX;
-		double worldMouseY = smx * sinR + smy * cosR + screenH / 2.0 + camOffY;
+		double worldMouseX = smx * cosR - smy * sinR + virtualW / 2.0 + camOffX;
+		double worldMouseY = smx * sinR + smy * cosR + virtualH / 2.0 + camOffY;
 
 		// partition clickables into screen-space and world lists
 		List<Entity> screenClickables = new ArrayList<>();
@@ -125,8 +126,8 @@ public class ClickSystem implements GameSystem {
 
 			if (!e.has(UIElement.class)) continue;
 			UIElement ui = e.get(UIElement.class);
-			double drawX = ui.anchorX * screenW;
-			double drawY = ui.anchorY * screenH;
+			double drawX = ui.anchorX * virtualW;
+			double drawY = ui.anchorY * virtualH;
 
 			boolean inside = mouseScreenX >= drawX && mouseScreenX <= drawX + w
 				          && mouseScreenY >= drawY && mouseScreenY <= drawY + h;

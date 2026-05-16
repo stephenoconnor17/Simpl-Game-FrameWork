@@ -88,11 +88,13 @@ public class Main {
 		player.get(Position.class).y = 0;
 		player.get(InputState.class).isMovingToTarget = false;
 
+		/*
 		Entity camera = scene.createEntity("camera");
 		Camera cam = new Camera().setTarget(player);
 		camera.add(cam);
 		cam.userOffsetY = -20;
-		//cam.zoom = 1.5;
+		cam.zoom = 1.5;
+		*/
 		
 		// enemy with a child border entity that detects player collision
 		Entity enemy = scene.createEntity("enemy");
@@ -163,10 +165,10 @@ public class Main {
 		// tilemap
 		Entity mapEntity = scene.createEntity("tilemap");
 		mapEntity.add(new Position());
-		mapEntity.get(Position.class).x -= 32;
-		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test_big.map"));
+		//mapEntity.get(Position.class).x -= 32;
+		mapEntity.add(new TileMap(8).setTileset("MYtileset.png").setMap("test.map"));
 
-		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene, -32, 0, (sc, tileIndex, wx, wy) -> {
+		TileMapUtils.spawnEntities(mapEntity.get(TileMap.class), scene, 0, 0, (sc, tileIndex, wx, wy) -> {
 			if (tileIndex == 1) {
 				Entity wall = sc.createEntity("wall");
 				wall.add(new Position());
@@ -324,7 +326,7 @@ public class Main {
 		Entity player = scene.createEntity("player");
 		player.add(Creator.position());
 		player.add(Creator.movementValues());
-		player.add(Creator.inputState().setClickToMove(true));
+		player.add(Creator.inputState().setKeyboardToMove(true));
 		player.add(Creator.playerControlled());
 		player.add(Creator.collision());
 		player.add(Creator.rigidBody());
