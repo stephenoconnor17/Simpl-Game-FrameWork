@@ -12,6 +12,7 @@ import entities.components.transform.Position;
 import entities.components.world.TileMap;
 import utils.TileMapUtils;
 
+/** Lazy-loads and renders tile maps with camera transform. Only draws tiles visible on screen. */
 public class TileMapSystem {
 
 	public void render(EntityManager entities, Graphics2D g, int screenW, int screenH) {

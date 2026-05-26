@@ -8,6 +8,10 @@ import java.awt.image.BufferedImage;
 
 import input.InputManager;
 
+/**
+ * Game loop and rendering pipeline. Runs a fixed-timestep accumulator for deterministic
+ * updates and renders the scene onto a virtual canvas scaled to the window with nearest-neighbour.
+ */
 public class Engine implements Runnable {
 	
     private GamePanel renderSurface;

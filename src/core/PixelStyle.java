@@ -1,5 +1,6 @@
 package core;
 
+/** Virtual canvas resolutions for pixel-art rendering. The engine renders at this resolution and scales up with nearest-neighbour. */
 public enum PixelStyle {
 	BIT_8(256, 144),
 	BIT_16(320, 180),

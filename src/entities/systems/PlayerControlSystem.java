@@ -13,6 +13,11 @@ import entities.components.rendering.Sprite;
 import entities.components.transform.Position;
 import input.InputManager;
 
+/**
+ * Maps raw keyboard/mouse input to entity movement and rotation.
+ * Handles WASD movement (rotated by camera angle), click-to-move pathfinding,
+ * FaceMouse/FaceEntity rotation, and RotateViewToMouse camera control.
+ */
 public class PlayerControlSystem implements GameSystem {
 
 	InputManager im;

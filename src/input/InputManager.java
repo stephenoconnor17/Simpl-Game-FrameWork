@@ -1,5 +1,6 @@
 package input;
 
+/** Coordinates keyboard and mouse input handlers. Attached to the render surface by Engine. */
 public class InputManager {
 
 	Keyboard keyboard;

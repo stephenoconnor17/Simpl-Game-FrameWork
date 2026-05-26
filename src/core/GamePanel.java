@@ -6,6 +6,7 @@ import java.awt.image.BufferStrategy;
 
 import javax.swing.JPanel;
 
+/** Double-buffered AWT Canvas used as the engine's drawing surface. */
 public class GamePanel extends Canvas{
 	
 	public GamePanel() {

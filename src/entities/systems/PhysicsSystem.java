@@ -11,6 +11,12 @@ import entities.components.physics.RigidBody;
 import entities.components.rendering.Sprite;
 import entities.components.transform.Position;
 
+/**
+ * Detects and resolves collisions between entities with {@link Collision} components.
+ * Supports circle-circle, box-box (OBB via SAT), and box-circle detection.
+ * Layer/mask bit flags filter which pairs are tested. Resolution pushes
+ * movable rigid bodies apart by penetration depth.
+ */
 public class PhysicsSystem implements GameSystem {
 
 	@Override

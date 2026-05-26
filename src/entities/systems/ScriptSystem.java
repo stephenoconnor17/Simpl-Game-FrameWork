@@ -4,6 +4,7 @@ import entities.Entity;
 import entities.EntityManager;
 import entities.components.ScriptComponent;
 
+/** Executes all {@link ScriptComponent} lambdas once per tick. */
 public class ScriptSystem implements GameSystem {
 
 	@Override

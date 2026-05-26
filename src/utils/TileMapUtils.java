@@ -13,6 +13,7 @@ import core.Scene;
 import entities.components.world.TileEntitySpawner;
 import entities.components.world.TileMap;
 
+/** Loads tileset images and map files into {@link TileMap} components, and spawns entities from tile data. */
 public class TileMapUtils {
 
 	public static void loadMap(TileMap tm) {

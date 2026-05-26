@@ -3,6 +3,7 @@ package input;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+/** Tracks per-key pressed state via AWT KeyListener. Public boolean fields are read directly by systems. */
 public class Keyboard implements KeyListener{
 
 	//standard movement keys

@@ -9,9 +9,10 @@ import java.awt.event.WindowEvent;
 
 import javax.swing.JFrame;
 
-//WINDOW IS JUST THE ACTUAL WINDOW
-//GAME PANEL IS WHERE THE DRAWING WILL HAPPEN.
-
+/**
+ * Full-screen application window. Creates a {@link GamePanel} as the drawing surface
+ * and sets up double buffering. The window is undecorated and non-resizable.
+ */
 public class Window extends JFrame{
 	
 	private Engine engine;

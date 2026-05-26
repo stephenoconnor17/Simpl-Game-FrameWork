@@ -33,6 +33,7 @@ import utils.TileMapUtils;
 
 import entities.components.Creator.*;
 
+/** Demo entry point. Sets up sample scenes to exercise engine features. */
 public class Main {
 	public static void main(String[] args) {
 		

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Owns all entities in a scene. Assigns monotonically increasing IDs and provides lookup by name or ID. */
 public class EntityManager {
 	
 	List<Entity> entities;

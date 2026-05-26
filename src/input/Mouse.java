@@ -11,6 +11,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 
+/**
+ * Tracks mouse position, click events, and button state. Coordinates are scaled from
+ * raw screen pixels to virtual canvas space. Supports a locked mode for FPS-style
+ * mouse-look (polls position delta and recenters each frame).
+ */
 public class Mouse implements MouseListener, MouseMotionListener{
 
 	/** Virtual canvas mouse X coordinate, scaled from raw screen pixels. */

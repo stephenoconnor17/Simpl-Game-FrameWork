@@ -10,6 +10,10 @@ import javax.swing.JComponent;
 import entities.components.Component;
 import exceptions.DuplicateComponentException;
 
+/**
+ * A data bag of components. Final by design — all behaviour comes from components and systems,
+ * not subclassing. Created via {@link EntityManager#createEntity(String)} to guarantee unique IDs.
+ */
 public class Entity{
 
 	// init

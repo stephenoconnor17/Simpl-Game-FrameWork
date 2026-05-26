@@ -9,6 +9,7 @@ import entities.components.input.PlayerControlled;
 import entities.components.physics.Collision;
 import entities.components.physics.Pickup;
 
+/** Removes {@link Pickup} entities when they collide with a {@link PlayerControlled} entity. */
 public class PickupSystem implements GameSystem {
 
 	@Override

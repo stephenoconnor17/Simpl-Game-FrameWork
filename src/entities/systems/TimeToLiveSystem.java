@@ -10,6 +10,7 @@ import entities.components.physics.Collision;
 import entities.components.physics.Pickup;
 import entities.components.util.TimeToLive;
 
+/** Counts down {@link TimeToLive} timers and removes expired entities. */
 public class TimeToLiveSystem implements GameSystem{
 
 	@Override
