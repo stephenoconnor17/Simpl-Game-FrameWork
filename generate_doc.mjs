@@ -122,27 +122,33 @@ const doc = new Document({
       para("    5.11 Rendering: FaceMouse & FaceEntity"),
       para("    5.12 Rendering: RotateViewToMouse"),
       para("    5.13 Rendering: Light"),
-      para("    5.14 World: TileMap"),
-      para("    5.15 Scripting: Script & ScriptComponent"),
-      para("    5.16 Audio: AudioSource"),
-      para("    5.17 RPG: Stats"),
-      para("    5.18 Util: TimeToLive"),
+      para("    5.14 Rendering: UIElement"),
+      para("    5.15 Rendering: Text"),
+      para("    5.16 World: TileMap"),
+      para("    5.17 Scripting: Script & ScriptComponent"),
+      para("    5.18 Audio: AudioSource"),
+      para("    5.19 RPG: Stats"),
+      para("    5.20 Util: TimeToLive"),
       para("6.  Systems — In Depth"),
-      para("    6.1  PlayerControlSystem"),
-      para("    6.2  MovementSystem"),
-      para("    6.3  ScriptSystem"),
-      para("    6.4  PhysicsSystem"),
-      para("    6.5  PickupSystem"),
-      para("    6.6  TimeToLiveSystem"),
-      para("    6.7  TileMapSystem"),
-      para("    6.8  RenderingSystem"),
-      para("    6.9  LightingSystem"),
+      para("    6.1  ClickSystem"),
+      para("    6.2  PlayerControlSystem"),
+      para("    6.3  MovementSystem"),
+      para("    6.4  ScriptSystem"),
+      para("    6.5  PhysicsSystem"),
+      para("    6.6  PickupSystem"),
+      para("    6.7  AnimationSystem"),
+      para("    6.8  AudioSystem"),
+      para("    6.9  TimeToLiveSystem"),
+      para("    6.10 TileMapSystem"),
+      para("    6.11 RenderingSystem"),
+      para("    6.12 LightingSystem"),
       para("7.  Input Management"),
       para("8.  System Execution Order & Data Flow"),
       para("9.  Creator — Component Factory"),
       para("10. Example: Building a Scene"),
       para("11. Utilities"),
       para("    11.1 TileMapUtils"),
+      para("12. Limitations"),
 
       pageBreak(),
 
@@ -171,6 +177,7 @@ const doc = new Document({
 │   ├── GamePanel.java         — AWT Canvas (render surface)
 │   ├── Window.java            — JFrame fullscreen wrapper
 │   ├── Scene.java             — Holds EntityManager + all systems
+│   ├── Data.java              — Persistent state across scene transitions
 │   └── PixelStyle.java        — Virtual resolution presets
 ├── entities/
 │   ├── Entity.java            — Component container with ID
@@ -188,7 +195,8 @@ const doc = new Document({
 │   │   │   └── MovementValues.java
 │   │   ├── input/
 │   │   │   ├── InputState.java
-│   │   │   └── PlayerControlled.java
+│   │   │   ├── PlayerControlled.java
+│   │   │   └── Clickable.java
 │   │   ├── physics/
 │   │   │   ├── Collision.java
 │   │   │   ├── RigidBody.java
@@ -196,8 +204,11 @@ const doc = new Document({
 │   │   ├── rendering/
 │   │   │   ├── Sprite.java
 │   │   │   ├── Layer.java
+│   │   │   ├── Animation.java
 │   │   │   ├── Camera.java
 │   │   │   ├── Light.java
+│   │   │   ├── UIElement.java
+│   │   │   ├── Text.java
 │   │   │   ├── FaceMouse.java
 │   │   │   ├── FaceEntity.java
 │   │   │   └── RotateViewToMouse.java
@@ -206,19 +217,24 @@ const doc = new Document({
 │   │   │   └── TileEntitySpawner.java (functional interface)
 │   │   ├── audio/
 │   │   │   └── AudioSource.java
-│   │   └── rpgsystem/
-│   │       └── Stats.java
+│   │   ├── rpgsystem/
+│   │   │   └── Stats.java
+│   │   └── util/
+│   │       └── TimeToLive.java
 │   └── systems/
 │       ├── GameSystem.java        — System interface
+│       ├── ClickSystem.java
 │       ├── PlayerControlSystem.java
 │       ├── MovementSystem.java
+│       ├── ScriptSystem.java
 │       ├── PhysicsSystem.java
 │       ├── PickupSystem.java
-│       ├── ScriptSystem.java
-│       ├── RenderingSystem.java
-│       ├── LightingSystem.java
+│       ├── AnimationSystem.java
+│       ├── AudioSystem.java
 │       ├── TimeToLiveSystem.java
-│       └── TileMapSystem.java
+│       ├── TileMapSystem.java
+│       ├── RenderingSystem.java
+│       └── LightingSystem.java
 ├── input/
 │   ├── InputManager.java
 │   ├── Keyboard.java
@@ -252,35 +268,48 @@ res/
       bullet("Calling update(dt) on the current Scene, then render()."),
       bullet("Managing the virtual canvas and double-buffered rendering."),
 
-      bold("Pseudocode — Game Loop:"),
+      bold("Pseudocode — Game Loop (Fixed-Timestep Accumulator):"),
       ...codeBlock(
-`WHILE running:
-    elapsed = time since last frame (nanoseconds)
-    dt = elapsed / 1,000,000,000   // convert to seconds
-    IF dt > 0.25 THEN dt = 0.25   // clamp large spikes
+`FIXED_STEP = 1/60
+WHILE running:
+    frameTime = time since last frame (seconds)
+    IF frameTime > 0.25 THEN frameTime = 0.25  // clamp large spikes
 
-    currentScene.update(dt)        // all systems process
-    render()                       // draw to screen
+    accumulator += frameTime
+    WHILE accumulator >= FIXED_STEP:
+        currentScene.update(FIXED_STEP)         // always exactly 1/60s
+        tick++
+        gameTime += FIXED_STEP
+        accumulator -= FIXED_STEP
 
-    sleep for remaining frame time (target: 16.67ms per frame)`),
+    render()                                     // once per frame
+    sleep for remaining frame time`),
 
       bold("Actual Code — Engine.run():"),
       ...codeBlock(
 `@Override
 public void run() {
-    final int FPS = 60;
-    final long FRAME_NS = 1_000_000_000L / FPS;
+    final double FIXED_STEP = 1.0 / 60.0;
+    final long FRAME_NS = 1_000_000_000L / 60;
+
     long lastTime = System.nanoTime();
+    double accumulator = 0;
 
     while (running) {
         long startTime = System.nanoTime();
         long elapsedNs = startTime - lastTime;
         lastTime = startTime;
 
-        double dt = elapsedNs / 1_000_000_000.0;
-        if (dt > 0.25) dt = 0.25;
+        double frameTime = elapsedNs / 1_000_000_000.0;
+        if (frameTime > 0.25) frameTime = 0.25;
 
-        update(dt);
+        accumulator += frameTime;
+        while (accumulator >= FIXED_STEP) {
+            update(FIXED_STEP);
+            tick++;
+            gameTime += FIXED_STEP;
+            accumulator -= FIXED_STEP;
+        }
         render();
 
         long workTimeNs = System.nanoTime() - startTime;
@@ -323,36 +352,40 @@ public void run() {
 
       // 3.2 Window & GamePanel
       h2("3.2 Window & GamePanel"),
-      para("Window (core/Window.java) is a thin wrapper around JFrame. It creates an undecorated, maximised fullscreen window and embeds a GamePanel inside it. When the Engine is set on the Window, it calls createBufferStrategy(3) on the GamePanel to initialise triple-buffering."),
+      para("Window (core/Window.java) is a thin wrapper around JFrame. It creates an undecorated, maximised fullscreen window and embeds a GamePanel inside it. The GamePanel calls createBufferStrategy(2) to initialise double-buffering."),
       para("GamePanel (core/GamePanel.java) extends java.awt.Canvas. It serves purely as the render surface — it has no game logic. Its size matches the full screen, and it receives keyboard/mouse listeners from the InputManager."),
 
       // 3.3 Scene
       h2("3.3 Scene"),
       para("A Scene (core/Scene.java) is the container that ties everything together. It owns:"),
       bullet("An EntityManager — the registry of all entities in the scene."),
-      bullet("One instance of every system — PlayerControlSystem, MovementSystem, ScriptSystem, PhysicsSystem, PickupSystem, TimeToLiveSystem, TileMapSystem, RenderingSystem, and LightingSystem."),
+      bullet("One instance of every system — ClickSystem, PlayerControlSystem, MovementSystem, ScriptSystem, PhysicsSystem, PickupSystem, AnimationSystem, AudioSystem, TimeToLiveSystem, TileMapSystem, RenderingSystem, and LightingSystem."),
       para("The Scene defines the update and render order explicitly:"),
 
-      bold("Update Order (called every frame):"),
+      bold("Update Order (called every tick):"),
       ...codeBlock(
 `public void update(double dt) {
-    playerControlSystem.update(entityManager, dt);  // 1. Read input, set velocities
-    movementSystem.update(entityManager, dt);       // 2. Apply velocities to positions
-    scriptSystem.update(entityManager, dt);         // 3. Run custom scripts
-    physicsSystem.update(entityManager, dt);        // 4. Detect & resolve collisions
-    pickupSystem.update(entityManager, dt);         // 5. Handle item pickups
-    timeToLiveSystem.update(entityManager, dt);    // 6. Remove expired entities
+    clickSystem.update(entityManager, dt);           // 1. Detect hover/press/click
+    playerControlSystem.update(entityManager, dt);   // 2. Read input, set velocities
+    movementSystem.update(entityManager, dt);        // 3. Apply velocities, resolve parents
+    scriptSystem.update(entityManager, dt);          // 4. Run custom scripts
+    physicsSystem.update(entityManager, dt);         // 5. Detect & resolve collisions
+    pickupSystem.update(entityManager, dt);          // 6. Handle item pickups
+    animationSystem.update(entityManager, dt);       // 7. Advance frames, swap sprites
+    audioSystem.update(entityManager, dt);           // 8. Play/stop clips, spatial audio
+    timeToLiveSystem.update(entityManager, dt);      // 9. Remove expired entities
 }`),
 
       bold("Render Order:"),
       ...codeBlock(
 `public void render(Graphics2D g, int screenW, int screenH) {
-    tileMapSystem.render(entityManager, g, screenW, screenH);   // 1. Background tiles
-    renderingSystem.render(entityManager, g, screenW, screenH);  // 2. Entity sprites
-    lightingSystem.render(entityManager, g, screenW, screenH);   // 3. Darkness + lights
+    tileMapSystem.render(entityManager, g, screenW, screenH);        // 1. Background tiles
+    renderingSystem.renderWorld(entityManager, g, screenW, screenH); // 2. World entities
+    lightingSystem.render(entityManager, g, screenW, screenH);       // 3. Darkness + lights
+    renderingSystem.renderUI(entityManager, g, screenW, screenH);    // 4. Screen-space UI
 }`),
 
-      para("This explicit ordering ensures predictable behaviour: input is read before movement, movement happens before collision detection, and tiles are drawn behind entity sprites."),
+      para("This explicit ordering ensures predictable behaviour: click detection runs before game logic reads it, input is read before movement, movement happens before collision detection, animation swaps sprites before rendering, and screen-space UI renders after lighting so it is always visible."),
 
       pageBreak(),
 
@@ -474,15 +507,29 @@ public Entity getEntity(String tag) {
       // 5.2 Parent/Child
       h2("5.2 Transform: ChildOf & ParentOf"),
       para("Package: entities.components.transform"),
-      para("These components establish parent-child relationships between entities. ChildOf stores a reference to a parent entity, and ParentOf stores a reference to a child. These are used in custom scripts to synchronise positions — for example, making an enemy's detection radius follow the enemy's position."),
+      para("ChildOf links an entity to a parent entity with a flat positional offset. ParentOf is the inverse marker on the parent side (currently informational). Parenting is single-level only — there are no nested transform chains or recursive hierarchy resolution."),
+      para("MovementSystem resolves child positions each frame by writing the parent's position plus the offset directly to the child's Position component:"),
+      ...codeBlock(
+`// MovementSystem — child position resolution
+if (e.has(Position.class) && e.has(ChildOf.class)) {
+    ChildOf childLink = e.get(ChildOf.class);
+    Entity parent = childLink.parentEntity;
+    if (parent != null && parent.has(Position.class)) {
+        Position parentPos = parent.get(Position.class);
+        Position pos = e.get(Position.class);
+        pos.x = parentPos.x + childLink.offsetX;
+        pos.y = parentPos.y + childLink.offsetY;
+    }
+}`),
       ...codeBlock(
 `public class ChildOf extends Component {
     public Entity parentEntity;
-    public ChildOf setParentEntity(Entity e) {
-        this.parentEntity = e;
-        return this;
-    }
+    public double offsetX = 0.0;
+    public double offsetY = 0.0;
+    public boolean inheritRotation = false; // field exists but not yet read by any system
 }`),
+      para("Because Position is always world-space, every other system (physics, rendering, audio, click detection) reads pos.x and pos.y directly without knowing whether the entity has a parent. The hierarchy resolution happens once, in MovementSystem, before anything else needs the result."),
+      para("Note: The inheritRotation field exists on ChildOf but is not currently wired into MovementSystem or any other system. It is reserved for future implementation."),
 
       // 5.3 MovementValues
       h2("5.3 Movement: MovementValues"),
@@ -665,8 +712,36 @@ public Entity getEntity(String tag) {
       para("The light is centred on the entity's sprite (if it has one) or its Position. Radius is in world units and scales with camera zoom. Intensity controls the alpha of the gradient — 1.0 fully erases darkness at the centre, 0.5 partially erases it. Color tints the gradient for effects like warm torchlight or cold blue."),
       bold("Used By: LightingSystem"),
 
-      // 5.14 TileMap
-      h2("5.14 World: TileMap"),
+      // 5.14 UIElement
+      h2("5.14 Rendering: UIElement"),
+      para("Package: entities.components.rendering"),
+      para("Marks an entity as a UI element. The screenSpace flag controls whether it renders in screen coordinates (HUD, menus) or world coordinates (health bars above enemies)."),
+      ...codeBlock(
+`public class UIElement extends Component {
+    public boolean screenSpace = true;  // true = screen coords, false = world coords
+    public double anchorX = 0.0;        // 0.0 = left, 0.5 = centre, 1.0 = right
+    public double anchorY = 0.0;        // 0.0 = top,  0.5 = centre, 1.0 = bottom
+}`),
+      para("Screen-space UI entities are positioned by anchor percentage: anchorX * screenWidth, anchorY * screenHeight. They do not need a Position component. Child entities inherit screenSpace from their root parent via the ChildOf chain, so only the top-level UI entity needs UIElement set."),
+      para("RenderingSystem partitions entities into world and screen-space lists. Screen-space entities are drawn after lighting in a separate renderUI() pass with no camera transform applied, so UI is always visible on top."),
+      bold("Used By: RenderingSystem, ClickSystem"),
+
+      // 5.15 Text
+      h2("5.15 Rendering: Text"),
+      para("Package: entities.components.rendering"),
+      para("Renders a text string on an entity. Works in both world-space (positioned by Position) and screen-space (positioned by UIElement anchors)."),
+      ...codeBlock(
+`public class Text extends Component {
+    public String text;      // the string to display
+    public int size;         // font size in points
+    public Color colour;     // text colour
+    public Font font;        // AWT font for rendering
+}`),
+      para("RenderingSystem draws text with anti-aliasing disabled for crisp pixel-art style. An entity can have both a Sprite and a Text component — both are rendered."),
+      bold("Used By: RenderingSystem"),
+
+      // 5.16 TileMap
+      h2("5.16 World: TileMap"),
       para("Package: entities.components.world"),
       ...codeBlock(
 `public class TileMap extends Component {
@@ -696,8 +771,8 @@ public interface TileEntitySpawner {
 }`),
       para("This interface is used by TileMapUtils.spawnEntities() (see Section 11.1) to let the caller decide which tiles produce entities and what components those entities should have. For example, returning a wall Entity for tile index 1 and null for everything else."),
 
-      // 5.15 Script & ScriptComponent
-      h2("5.15 Scripting: Script & ScriptComponent"),
+      // 5.17 Script & ScriptComponent
+      h2("5.17 Scripting: Script & ScriptComponent"),
       para("Package: entities.components"),
       para("Script is a functional interface that allows custom per-entity behaviour via lambdas:"),
       ...codeBlock(
@@ -744,8 +819,8 @@ public interface Script {
     }
 })`),
 
-      // 5.16 AudioSource
-      h2("5.16 Audio: AudioSource"),
+      // 5.18 AudioSource
+      h2("5.18 Audio: AudioSource"),
       para("Package: entities.components.audio"),
       para("AudioSource attaches audio playback to an entity."),
       ...codeBlock(
@@ -757,13 +832,13 @@ public interface Script {
 }`),
       para("Volume is clamped in the setter — values above 1.0 are capped to 1.0, values below 0.0 are capped to 0.0. All fields have fluent setters for chaining."),
 
-      // 5.17 Stats
-      h2("5.17 RPG: Stats"),
+      // 5.19 Stats
+      h2("5.19 RPG: Stats"),
       para("Package: entities.components.rpgsystem"),
       para("Stats is a placeholder component for RPG mechanics. It stores health, attack, defence, level, and experience. No system currently processes it — it is reserved for future gameplay implementation."),
 
-      // 5.18 TimeToLive
-      h2("5.18 Util: TimeToLive"),
+      // 5.20 TimeToLive
+      h2("5.20 Util: TimeToLive"),
       para("Package: entities.components.util"),
       para("TimeToLive marks an entity for automatic removal after a duration. The TimeToLiveSystem decrements ttl each frame and removes the entity when it reaches zero."),
       ...codeBlock(
@@ -779,8 +854,15 @@ public interface Script {
       h1("6. Systems — In Depth"),
       para("Systems contain all behaviour logic. Each system iterates entities, checks for required components, and processes them. This section explains each system's algorithm in both pseudocode and actual code."),
 
-      // 6.1 PlayerControlSystem
-      h2("6.1 PlayerControlSystem"),
+      // 6.1 ClickSystem
+      h2("6.1 ClickSystem"),
+      para("File: entities/systems/ClickSystem.java"),
+      para("Detects mouse hover, press, and click on entities with a Clickable component. Runs before all other update systems so scripts can read click state on the same frame."),
+      para("Screen-space UI entities are hit-tested first (sorted by layer descending so visually-on-top wins overlaps). If any screen-space clickable is hit, the entire world pass is skipped — preventing UI clicks from firing world interactions beneath. World entities are hit-tested after converting the mouse position to world coordinates via the camera transform."),
+      para("Hit-box dimensions come from Clickable.width/height when non-zero, otherwise from the entity's Sprite dimensions. Clickable.clicked is true for one frame after a click lands. Clickable.hovered and Clickable.pressed are continuous states reset each frame."),
+
+      // 6.2 PlayerControlSystem
+      h2("6.2 PlayerControlSystem"),
       para("File: entities/systems/PlayerControlSystem.java"),
       para("This is the most complex system. It handles three responsibilities:"),
       bullet("Reading hardware input (keyboard/mouse) and writing it to InputState components."),
@@ -866,16 +948,19 @@ if (input.isMovingToTarget) {
     mov.velocityY = inputX * sin + inputY * cos;
 }`),
 
-      // 6.2 MovementSystem
-      h2("6.2 MovementSystem"),
+      // 6.3 MovementSystem
+      h2("6.3 MovementSystem"),
       para("File: entities/systems/MovementSystem.java"),
-      para("The simplest system. It applies velocity to position using delta time for frame-independent movement."),
+      para("Applies velocity to position and resolves child entity positions. Two responsibilities per frame:"),
 
       bold("Pseudocode:"),
       ...codeBlock(
 `FOR each entity with Position + MovementValues:
     position.x += velocityX * dt
-    position.y += velocityY * dt`),
+    position.y += velocityY * dt
+
+FOR each entity with Position + ChildOf:
+    position = parentPosition + offset   // single-level, no recursion`),
 
       bold("Actual Code:"),
       ...codeBlock(
@@ -888,11 +973,22 @@ public void update(EntityManager entityManager, double dt) {
             pos.x += mov.velocityX * dt;
             pos.y += mov.velocityY * dt;
         }
+
+        if (e.has(Position.class) && e.has(ChildOf.class)) {
+            ChildOf childLink = e.get(ChildOf.class);
+            Entity parent = childLink.parentEntity;
+            if (parent != null && parent.has(Position.class)) {
+                Position parentPos = parent.get(Position.class);
+                Position pos = e.get(Position.class);
+                pos.x = parentPos.x + childLink.offsetX;
+                pos.y = parentPos.y + childLink.offsetY;
+            }
+        }
     }
 }`),
 
-      // 6.3 ScriptSystem
-      h2("6.3 ScriptSystem"),
+      // 6.4 ScriptSystem
+      h2("6.4 ScriptSystem"),
       para("File: entities/systems/ScriptSystem.java"),
       para("Iterates all entities with a ScriptComponent and calls their update method. This is the bridge between the ECS framework and custom per-entity behaviours."),
 
@@ -904,8 +1000,8 @@ public void update(EntityManager entityManager, double dt) {
 // Which delegates to the lambda:
 //   script.update(self, entityManager, dt)`),
 
-      // 6.4 PhysicsSystem
-      h2("6.4 PhysicsSystem"),
+      // 6.5 PhysicsSystem
+      h2("6.5 PhysicsSystem"),
       para("File: entities/systems/PhysicsSystem.java"),
       para("The PhysicsSystem handles collision detection and resolution. It supports three collision shape combinations: Circle-Circle, OBB-OBB (Oriented Bounding Box), and OBB-Circle."),
 
@@ -992,8 +1088,8 @@ IF distance == 0: push along shortest axis
     }
 }`),
 
-      // 6.5 PickupSystem
-      h2("6.5 PickupSystem"),
+      // 6.6 PickupSystem
+      h2("6.6 PickupSystem"),
       para("File: entities/systems/PickupSystem.java"),
       para("Processes collision events to handle item collection."),
 
@@ -1032,8 +1128,19 @@ public void update(EntityManager entityManager, double dt) {
     for (Entity e : toRemove) entityManager.removeEntity(e);
 }`),
 
-      // 6.6 TimeToLiveSystem
-      h2("6.6 TimeToLiveSystem"),
+      // 6.7 AnimationSystem
+      h2("6.7 AnimationSystem"),
+      para("File: entities/systems/AnimationSystem.java"),
+      para("Advances animation frames and swaps the entity's Sprite.image each tick. Requires both Animation and Sprite on the entity. Accumulates elapsed time and advances currentFrame when the frame duration is reached. Looping animations wrap to frame 0; non-looping animations hold on the last frame."),
+
+      // 6.8 AudioSystem
+      h2("6.8 AudioSystem"),
+      para("File: entities/systems/AudioSystem.java"),
+      para("Manages audio playback for entities with AudioSource components. Caches Clip instances per entity so repeated plays reuse the same clip. Uses a flag protocol: set play=true to start, stop=true to stop. The system resets these flags after acting on them."),
+      para("When spatial audio is enabled on an AudioSource, volume attenuates linearly from the base volume at distance 0 to silence at maxDistance. Stereo pan is computed from the horizontal offset between source and listener, rotated by the negative camera angle so left/right matches what is on screen."),
+
+      // 6.9 TimeToLiveSystem
+      h2("6.9 TimeToLiveSystem"),
       para("File: entities/systems/TimeToLiveSystem.java"),
       para("Decrements the ttl field on every entity with a TimeToLive component. When ttl reaches zero or below, the entity is removed from the EntityManager."),
 
@@ -1048,8 +1155,8 @@ FOR each entity with TimeToLive:
 FOR each entity in toRemove:
     Remove from EntityManager`),
 
-      // 6.7 TileMapSystem
-      h2("6.7 TileMapSystem"),
+      // 6.10 TileMapSystem
+      h2("6.10 TileMapSystem"),
       para("File: entities/systems/TileMapSystem.java"),
       para("Renders the tile-based world. It has two responsibilities: lazy-loading tilemap data on first encounter, and drawing visible tiles with camera-aware frustum culling."),
       para("When TileMapSystem encounters a TileMap component that has not yet been loaded (loaded == false), it delegates to TileMapUtils.load() which parses the map file and slices the tileset image into individual cached tiles. This lazy-loading approach means tilemaps can be created with just path strings during scene setup — the heavy I/O only happens once, on the first frame that needs the data. If TileMapUtils.spawnEntities() was called during scene setup, the map data will already be loaded and this step is skipped."),
@@ -1089,12 +1196,15 @@ FOR each entity with TileMap + Position:
 // Restore original transform`),
       para("The entity's Position component determines where the tilemap is drawn in world space. This means moving the tilemap entity's position moves the entire visual grid. When using TileMapUtils.spawnEntities() to create collision entities from the map, the same offset must be passed as the origin so that the spawned entities align with the rendered tiles."),
 
-      // 6.8 RenderingSystem
-      h2("6.8 RenderingSystem"),
+      // 6.11 RenderingSystem
+      h2("6.11 RenderingSystem"),
       para("File: entities/systems/RenderingSystem.java"),
-      para("Renders all entity sprites with camera transformation, layer sorting, and per-entity rotation."),
+      para("Renders all visible entities. Split into two passes called separately by Scene:"),
+      bullet("renderWorld() — world entities drawn with camera transform (zoom, rotation, offset). Entities can have a Sprite, Text, or both."),
+      bullet("renderUI() — screen-space UI entities drawn without camera transform, positioned by UIElement anchor percentages (anchorX * screenW, anchorY * screenH)."),
+      para("Scene calls renderWorld, then LightingSystem, then renderUI — so UI always draws on top of lighting. Entities are partitioned into world and screen-space lists during renderWorld. Screen-space classification walks up the ChildOf parent chain to inherit screenSpace from the root UIElement."),
 
-      bold("Pseudocode:"),
+      bold("Pseudocode — renderWorld:"),
       ...codeBlock(
 `// Sort entities by Layer level (ascending = back to front)
 entities.sort(by layerLevel, default 0)
@@ -1104,42 +1214,59 @@ FOR each entity with Camera:
     camX = target.centreX - screenW/2 + rotatedUserOffset.x
     camY = target.centreY - screenH/2 + rotatedUserOffset.y
 
+// Partition into world entities and screen-space UI entities
+FOR each entity with Sprite or Text:
+    IF isScreenSpace(entity): add to screenUIEntities
+    ELSE IF has Position:     add to worldEntities
+
 // Apply camera transform
-g.translate(screenCentre)
-g.scale(camZoom)
-g.rotate(-camRotation)
-g.translate(-screenCentre)
-g.translate(-camOffset)
+g.translate(screenCentre); g.scale(camZoom); g.rotate(-camRotation)
+g.translate(-screenCentre); g.translate(-camOffset)
 
-// Draw each entity
-FOR each entity with Sprite + Position:
-    Save transform
-    Rotate around sprite centre by entity.rotation
-    Draw sprite at (pos.x, pos.y)
-    Restore transform
+// Draw world entities (sprites and/or text)
+FOR each entity in worldEntities:
+    Draw sprite rotated around its centre
+    Draw text at entity position (anti-aliasing off)`),
 
-// Restore base transform`),
-
-      bold("Actual Code — Sprite Rendering with Rotation:"),
+      bold("Pseudocode — renderUI:"),
       ...codeBlock(
-`for (Entity e : MyList) {
-    if (!e.has(Sprite.class) || !e.has(Position.class)) continue;
+`// No camera transform applied
+FOR each entity in screenUIEntities:
+    drawX = anchorX * screenW
+    drawY = anchorY * screenH
+    Draw sprite at (drawX, drawY)
+    Draw text at (drawX, drawY) (anti-aliasing off)`),
+
+      bold("Actual Code — World Sprite Rendering with Rotation:"),
+      ...codeBlock(
+`for (Entity e : worldEntities) {
     Position pos = e.get(Position.class);
-    Sprite spr = e.get(Sprite.class);
-
     AffineTransform old = g.getTransform();
-    double centerX = pos.x + spr.image.getWidth() / 2.0;
-    double centerY = pos.y + spr.image.getHeight() / 2.0;
 
-    g.rotate(pos.rotation, centerX, centerY);
-    g.translate(pos.x, pos.y);
-    g.drawImage(spr.image, 0, 0, null);
-    g.translate(-pos.x, -pos.y);
+    if (e.has(Sprite.class)) {
+        Sprite spr = e.get(Sprite.class);
+        if (spr.image != null) {
+            double centerX = pos.x + spr.image.getWidth() / 2.0;
+            double centerY = pos.y + spr.image.getHeight() / 2.0;
+            g.rotate(pos.rotation, centerX, centerY);
+            g.translate(pos.x, pos.y);
+            g.drawImage(spr.image, 0, 0, null);
+            g.setTransform(old);
+        }
+    }
+
+    if (e.has(Text.class)) {
+        Text t = e.get(Text.class);
+        g.setFont(t.font);
+        g.setColor(t.colour);
+        g.drawString(t.text, (int) pos.x, (int) pos.y + baseline);
+    }
+
     g.setTransform(old);
 }`),
 
-      // 6.9 LightingSystem
-      h2("6.9 LightingSystem"),
+      // 6.12 LightingSystem
+      h2("6.12 LightingSystem"),
       para("File: entities/systems/LightingSystem.java"),
       para("Renders dynamic lighting as a post-process overlay. The system creates a screen-sized darkness image, fills it with ambient darkness, then subtracts radial gradients at each Light entity's position."),
 
@@ -1197,67 +1324,91 @@ FOR each entity with Light + Position:
       para("Understanding the order in which systems execute and how data flows between them is critical to understanding the engine's behaviour. Here is the complete per-frame pipeline:"),
 
       ...codeBlock(
-`┌─────────────────────────────────────────────────────────────────┐
-│                        FRAME START                              │
-│  Engine computes dt from elapsed nanoseconds                    │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  1. PlayerControlSystem                                         │
-│     READS:  Keyboard state, Mouse state, Camera offset/rotation │
-│     WRITES: InputState, MovementValues.velocity, Position.rot   │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  2. MovementSystem                                              │
-│     READS:  MovementValues.velocity, dt                         │
-│     WRITES: Position.x, Position.y                              │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  3. ScriptSystem                                                │
-│     READS:  Any component (via entity access)                   │
-│     WRITES: Any component (scripts have full access)            │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  4. PhysicsSystem                                               │
-│     READS:  Position, Collision, RigidBody, Sprite              │
-│     WRITES: Collision.collidedWith, Position (resolution)       │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  5. PickupSystem                                                │
-│     READS:  Collision.collidedWith, PlayerControlled, Pickup    │
-│     WRITES: Pickup.collected, removes entities                  │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  6. TimeToLiveSystem                                            │
-│     READS:  TimeToLive.ttl, dt                                  │
-│     WRITES: TimeToLive.ttl, removes expired entities            │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  RENDER PHASE                                                   │
-│  7. TileMapSystem   → lazy-loads + draws background tiles       │
-│  8. RenderingSystem → draws entity sprites (sorted by Layer)    │
-│  9. LightingSystem  → ambient darkness + point light subtraction│
-│     READS: Position, Sprite, Layer, Camera, TileMap, Light      │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Engine scales virtual canvas to screen, presents buffer        │
-│                        FRAME END                                │
-└─────────────────────────────────────────────────────────────────┘`),
+`┌──────────────────────────────────────────────────────────────────┐
+│                         FRAME START                              │
+│  Engine accumulates frameTime, ticks update(FIXED_STEP) in loop │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  1. ClickSystem                                                  │
+│     READS:  Clickable, Mouse state, Camera, Sprite, UIElement,   │
+│             Position, Layer, ChildOf                              │
+│     WRITES: Clickable.clicked/hovered/pressed/clickX/clickY      │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  2. PlayerControlSystem                                          │
+│     READS:  Keyboard state, Mouse state, Camera offset/rotation  │
+│     WRITES: InputState, MovementValues.velocity, Position.rot    │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  3. MovementSystem                                               │
+│     READS:  MovementValues.velocity, ChildOf.offset, dt          │
+│     WRITES: Position.x, Position.y (velocity + parent resolve)   │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  4. ScriptSystem                                                 │
+│     READS:  Any component (via entity access)                    │
+│     WRITES: Any component (scripts have full access)             │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  5. PhysicsSystem                                                │
+│     READS:  Position, Collision, RigidBody, Sprite               │
+│     WRITES: Collision.collidedWith, Position (resolution)        │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  6. PickupSystem                                                 │
+│     READS:  Collision.collidedWith, PlayerControlled, Pickup     │
+│     WRITES: Pickup.collected, removes entities                   │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  7. AnimationSystem                                              │
+│     READS:  Animation, Sprite                                    │
+│     WRITES: Animation.currentFrame/elapsed, Sprite.image         │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  8. AudioSystem                                                  │
+│     READS:  AudioSource, Camera.rotation, Position               │
+│     WRITES: AudioSource.play/stop/playing, clip volume/pan       │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  9. TimeToLiveSystem                                             │
+│     READS:  TimeToLive.ttl, dt                                   │
+│     WRITES: TimeToLive.ttl, removes expired entities             │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  RENDER PHASE                                                    │
+│  10. TileMapSystem            → lazy-loads + draws tiles         │
+│  11. RenderingSystem.renderWorld → world sprites + text          │
+│  12. LightingSystem           → darkness + point light subtract  │
+│  13. RenderingSystem.renderUI → screen-space UI (no camera)      │
+│      READS: Position, Sprite, Text, Layer, Camera, UIElement,    │
+│             TileMap, Light, ChildOf                               │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  Engine scales virtual canvas to screen, presents buffer         │
+│                         FRAME END                                │
+└──────────────────────────────────────────────────────────────────┘`),
 
       pageBreak(),
 
@@ -1305,8 +1456,11 @@ Creator.light()                 → new Light()
 Creator.faceMouse()             → new FaceMouse()
 Creator.faceEntity(Entity e)    → new FaceEntity(e)
 Creator.rotateViewToMouse()     → new RotateViewToMouse()
+Creator.uiElement()             → new UIElement()
+Creator.text()                  → new Text()
 
 // Input
+Creator.clickable()             → new Clickable()
 Creator.playerControlled()      → new PlayerControlled()
 Creator.inputState()            → new InputState()
 
@@ -1496,16 +1650,23 @@ TileMapUtils.spawnEntities(tm, em, -32, 0, spawner);`),
       bold("Why This Is a Utility, Not a System:"),
       para("Entity spawning from map data is a one-time scene setup operation, not something that runs every frame. It doesn't fit the System pattern (which processes entities each tick). Making it a static utility keeps the code discoverable, testable, and callable from any scene setup method without needing a system instance."),
 
+      // 12. Limitations
+      pageBreak(),
+      h1("12. Limitations"),
+      bullet("Single-level parenting only. ChildOf links one child to one parent with a flat offset. There are no nested transform chains or recursive hierarchy resolution."),
+      bullet("inheritRotation is reserved but not implemented. The field exists on ChildOf but no system reads it yet."),
+      bullet("No automated tests. The engine is verified manually via core.Main. There is no test suite."),
+
       // Final note
       pageBreak(),
       h1("End of Document"),
-      para("This document covers the complete architecture of the Simpl engine as of its current state. The engine provides a solid ECS foundation with rendering, lighting, physics, input, audio, tile mapping, scripting, and a Creator factory for fast iteration. Planned areas for future development include the animation system, UI system, and AI/pathfinding."),
+      para("This document covers the complete architecture of the Simpl engine as of its current state. The engine provides an ECS foundation with rendering, lighting, physics, input, audio, tile mapping, animation, UI, click detection, scripting, and a Creator factory for fast iteration."),
     ],
   }],
 });
 
 // Generate
 const buffer = await Packer.toBuffer(doc);
-const outPath = "C:/Users/steph/eclipse-workspace/Simpl/Simpl_Engine_Documentation.docx";
-fs.writeFileSync(outPath, buffer);
-console.log("Document written to:", outPath);
+const outUrl = new URL("Simpl_Engine_Documentation.docx", import.meta.url);
+fs.writeFileSync(outUrl, buffer);
+console.log("Document written to:", outUrl.pathname);
