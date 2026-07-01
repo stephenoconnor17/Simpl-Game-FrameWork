@@ -50,7 +50,8 @@ public class LightingSystem {
 		camTransform.scale(camZoom, camZoom);
 		camTransform.rotate(-camRotation);
 		camTransform.translate(-screenW / 2.0, -screenH / 2.0);
-		camTransform.translate(-camX, -camY);
+		// snap camera offset like RenderingSystem so lights don't sit a sub-pixel off the world
+		camTransform.translate(-Math.round(camX), -Math.round(camY));
 
 		// erase darkness where lights are
 		lg.setComposite(AlphaComposite.DstOut);

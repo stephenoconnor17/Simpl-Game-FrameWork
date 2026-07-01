@@ -129,10 +129,17 @@ public class PlayerControlSystem implements GameSystem {
 
 				if (input.keyboardToMove) {
 					double inputX = 0, inputY = 0;
-					if (input.movingUp)    inputY -= mov.speed;
-					if (input.movingDown)  inputY += mov.speed;
-					if (input.movingLeft)  inputX -= mov.speed;
-					if (input.movingRight) inputX += mov.speed;
+					if (input.movingUp)    inputY -= 1;
+					if (input.movingDown)  inputY += 1;
+					if (input.movingLeft)  inputX -= 1;
+					if (input.movingRight) inputX += 1;
+
+					// normalize so diagonal speed matches cardinal speed, then apply speed
+					double len = Math.sqrt(inputX * inputX + inputY * inputY);
+					if (len > 0) {
+						inputX = inputX / len * mov.speed;
+						inputY = inputY / len * mov.speed;
+					}
 
 					// rotate movement by camera rotation so W = forward
 					double sin = Math.sin(camRotation);

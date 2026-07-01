@@ -50,7 +50,9 @@ public class RenderingSystem {
 		g.scale(camZoom, camZoom);
 		g.rotate(-camRotation);
 		g.translate(-screenW / 2.0, -screenH / 2.0);
-		g.translate(-camX, -camY);
+		// snap the camera offset to whole virtual pixels at render time only —
+		// fractional translates rasterize per-axis and cause diagonal stutter
+		g.translate(-Math.round(camX), -Math.round(camY));
 
 		for (Entity e : worldEntities) {
 			Position pos = e.get(Position.class);
@@ -59,11 +61,14 @@ public class RenderingSystem {
 			// draw sprite rotated around its center
 			if (e.has(Sprite.class)) {
 				Sprite spr = e.get(Sprite.class);
-				if (spr.image != null) {  
-				double centerX = pos.x + spr.image.getWidth() / 2.0;
-				double centerY = pos.y + spr.image.getHeight() / 2.0;
+				if (spr.image != null) {
+				// snap draw position to whole virtual pixels; logical position stays a double
+				double drawX = Math.round(pos.x);
+				double drawY = Math.round(pos.y);
+				double centerX = drawX + spr.image.getWidth() / 2.0;
+				double centerY = drawY + spr.image.getHeight() / 2.0;
 				g.rotate(pos.rotation, centerX, centerY);
-				g.translate(pos.x, pos.y);
+				g.translate(drawX, drawY);
 				g.drawImage(spr.image, 0, 0, null);
 				g.setTransform(old);
 				old = g.getTransform();

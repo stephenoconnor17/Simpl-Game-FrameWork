@@ -57,7 +57,9 @@ public class TileMapSystem {
 		g.scale(camZoom, camZoom);
 		g.rotate(-camRotation);
 		g.translate(-screenW / 2.0, -screenH / 2.0);
-		g.translate(-camX, -camY);
+		// snap the camera offset to whole virtual pixels — must match RenderingSystem's
+		// snapping exactly or tiles shimmer 1px against sprites
+		g.translate(-Math.round(camX), -Math.round(camY));
 
 		for (Entity e : entities.getEntities()) {
 			if (!e.has(TileMap.class) || !e.has(Position.class)) continue;
@@ -98,8 +100,9 @@ public class TileMapSystem {
 					BufferedImage tileImg = tm.getTileImage(tileIndex);
 					if (tileImg == null) continue;
 
-					double drawX = pos.x + col * tm.tileSize;
-					double drawY = pos.y + row * tm.tileSize;
+					// snap map origin to whole virtual pixels (same rounding as sprite draws)
+					double drawX = Math.round(pos.x) + col * tm.tileSize;
+					double drawY = Math.round(pos.y) + row * tm.tileSize;
 					g.translate(drawX, drawY);
 					g.drawImage(tileImg, 0, 0, null);
 					g.translate(-drawX, -drawY);
